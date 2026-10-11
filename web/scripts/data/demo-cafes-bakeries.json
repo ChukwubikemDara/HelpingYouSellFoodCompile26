@@ -1,0 +1,105 @@
+{
+  "about": "Three State College cafes and bakeries for the demo, from the team's scraped photo set (cafes-and-bakery.zip, branch dev-david of HelpingYouSellFoodCompile26). Seven items per store were picked from the 65 in that set. Loaded with: npx tsx scripts/import-demo-restaurants.ts <api_base_url> --credentials <file.json> --data scripts/data/demo-cafes-bakeries.json. Allergens are demo placeholders (only the obvious ones for each item); the real merchants must confirm them.",
+  "researched_on": "2026-10-11",
+  "photo_base_url": "https://c0mpiled-photos-949603589879-us-east-2.s3.us-east-2.amazonaws.com/photos/demo/",
+  "photo_note": "item.photo is the JPEG from the zip (max 1200 px) under photo_base_url. The API sets Deal.photo_url only from POST /merchants/{id}/drafts, so the importer sends that photo there and the backend stores its own copy under photos/.",
+  "default_discount_pct": 50,
+  "deal_defaults": {
+    "pickup_end_local": "23:30",
+    "pickup_end_at_close_min_lead": 90,
+    "max_per_customer": 3,
+    "deal_price_rule": "regular price x (100 - item.discount_pct)%, rounded down to a multiple of 25 cents",
+    "pickup_end_rule": "the store's closes_at when that is at least 90 minutes after the import runs, else 23:30",
+    "kind_rule": "surplus when pickup_end is within 2 h of closes_at, else timed (same rule the API uses for manual deals)"
+  },
+  "restaurants": [
+    {
+      "slug": "caramel-afternoon",
+      "name": "Caramel Afternoon",
+      "category": "bakery",
+      "address": "214 E Calder Way, State College, PA 16801",
+      "lat": 40.7952502,
+      "lng": -77.8593679,
+      "phone": "+15822202056",
+      "closes_at": "19:00",
+      "sources": {
+        "address": ["https://caramelafternoon.com/", "https://www.doordash.com/store/caramel-afternoon---214-e-calder-way-state-college-35058967/", "https://nominatim.openstreetmap.org (lat/lng)"],
+        "phone": ["https://caramelafternoon.com/ (582-220-2056)"],
+        "closes_at": ["https://caramelafternoon.com/ (Sunday 9:30 am - 7 pm)"],
+        "prices": ["https://www.ubereats.com/store/caramel-afternoon-state-college/fr29ysLjVu-xtHJmgXqrTA (delivery prices: Fruit Tart $8.30, Key Lime Pie $8.30, Cappuccino $5.00, Mocha $5.30, Strawberry matcha $5.30)", "https://www.doordash.com/store/caramel-afternoon---214-e-calder-way-state-college-35058967/ (delivery prices: Passion fruit caramel tart $9.77, Fruit Tart $9.54, Mocha $6.09)"]
+      },
+      "estimated_fields": [
+        "Fruit Tart, Key Lime Pie, Cappuccino, Mocha, Strawberry Matcha prices: Uber Eats price divided by the 1.2 delivery markup",
+        "Passion Fruit Caramel Tart price: DoorDash $9.77 scaled by the Uber Eats / DoorDash ratio seen on Fruit Tart ($6.92 / $9.54)",
+        "Strawberry Tart price: not listed online; set to the Fruit Tart price"
+      ],
+      "items": [
+        { "name": "Passion Fruit Caramel Tart", "source_item_name": "Passion fruit caramel tart", "source_image": "Caramel_Afternoon/passion_fruit_caramel_tart.jpg", "photo": "caramel-afternoon/passion-fruit-caramel-tart.jpg", "price_cents": 709, "price_estimated": true, "discount_pct": 50, "quantity_total": 12, "allergens": ["wheat", "milk", "egg"], "note": "Passion fruit and caramel tart, made in house today." },
+        { "name": "Fruit Tart", "source_item_name": "Fruit Tart", "source_image": "Caramel_Afternoon/fruit_tart.jpg", "photo": "caramel-afternoon/fruit-tart.jpg", "price_cents": 692, "price_estimated": true, "discount_pct": 45, "quantity_total": 12, "allergens": ["wheat", "milk", "egg"], "note": "Custard tart topped with fresh fruit, made in house today." },
+        { "name": "Strawberry Tart", "source_item_name": "Strawberry Tart", "source_image": "Caramel_Afternoon/strawberry_tart.jpg", "photo": "caramel-afternoon/strawberry-tart.jpg", "price_cents": 692, "price_estimated": true, "discount_pct": 60, "quantity_total": 10, "allergens": ["wheat", "milk", "egg"], "note": "Strawberry tart, made in house today." },
+        { "name": "Key Lime Pie", "source_item_name": "Key Lime Pie", "source_image": "Caramel_Afternoon/key_lime_pie.jpg", "photo": "caramel-afternoon/key-lime-pie.jpg", "price_cents": 692, "price_estimated": true, "discount_pct": 55, "quantity_total": 10, "allergens": ["wheat", "milk", "egg"], "note": "Key lime pie, made in house today." },
+        { "name": "Cappuccino", "source_item_name": "Cappuccino", "source_image": "Caramel_Afternoon/cappuccino.jpg", "photo": "caramel-afternoon/cappuccino.jpg", "price_cents": 417, "price_estimated": true, "discount_pct": 40, "quantity_total": 20, "allergens": ["milk"], "note": "Espresso with steamed milk, made when you pick up." },
+        { "name": "Mocha", "source_item_name": "Mocha", "source_image": "Caramel_Afternoon/mocha.jpg", "photo": "caramel-afternoon/mocha.jpg", "price_cents": 442, "price_estimated": true, "discount_pct": 65, "quantity_total": 20, "allergens": ["milk"], "note": "Espresso, chocolate and steamed milk, made when you pick up." },
+        { "name": "Strawberry Matcha", "source_item_name": "Strawberry matcha", "source_image": "Caramel_Afternoon/strawberry_matcha.jpg", "photo": "caramel-afternoon/strawberry-matcha.jpg", "price_cents": 442, "price_estimated": true, "discount_pct": 60, "quantity_total": 15, "allergens": ["milk"], "note": "Iced matcha latte over strawberry, made when you pick up." }
+      ]
+    },
+    {
+      "slug": "cafe-wow",
+      "name": "Cafe Wow",
+      "category": "cafe",
+      "address": "234 E College Ave, Unit C, State College, PA 16801",
+      "lat": 40.7959156,
+      "lng": -77.8590374,
+      "phone": "+18148629144",
+      "closes_at": "21:00",
+      "sources": {
+        "address": ["https://www.doordash.com/en/store/cafe-wow-state-college-30904223/ (234 E College Ave Ste C)", "https://m.yelp.com/biz/caf%C3%A9-wow-state-college-2", "https://nominatim.openstreetmap.org (lat/lng)"],
+        "phone": ["https://m.yelp.com/biz/caf%C3%A9-wow-state-college-2", "https://www.menuguide.com/PA/State-College/Cafe-Wow"],
+        "closes_at": ["https://frankiapp.com/business/cafe-wow-495914 (Sunday 12pm - 9pm)", "https://www.mapquest.com/us/pennsylvania/cafe-wow-365138112 (11 am - 9 pm)"],
+        "prices": ["https://www.doordash.com/en/store/cafe-wow-state-college-30904223/ (Lavender Milk Tea $4.25, Bubble Brown Sugar Milk $5.25, Takoyaki $9.50)"]
+      },
+      "estimated_fields": [
+        "Thai Milk Tea, Okinawa Milk Tea, Mango Peach Iced Tea, Lychee Green Tea prices: not shown online; set to the $4.25 Lavender Milk Tea price"
+      ],
+      "items": [
+        { "name": "Bubble Brown Sugar Milk", "source_item_name": "Bubble Brown Sugar Milk", "source_image": "Cafe_Wow/bubble_brown_sugar_milk.jpg", "photo": "cafe-wow/bubble-brown-sugar-milk.jpg", "price_cents": 525, "discount_pct": 50, "quantity_total": 15, "allergens": ["milk"], "note": "Fresh milk with brown sugar boba, made when you pick up." },
+        { "name": "Lavender Milk Tea", "source_item_name": "Lavender Milk Tea", "source_image": "Cafe_Wow/lavender_milk_tea.jpg", "photo": "cafe-wow/lavender-milk-tea.jpg", "price_cents": 425, "discount_pct": 40, "quantity_total": 15, "allergens": ["milk"], "note": "Lavender milk tea, made when you pick up." },
+        { "name": "Takoyaki", "source_item_name": "Takoyaki", "source_image": "Cafe_Wow/takoyaki.jpg", "photo": "cafe-wow/takoyaki.jpg", "price_cents": 950, "discount_pct": 45, "quantity_total": 10, "allergens": ["wheat", "egg", "fish"], "note": "Octopus balls with takoyaki sauce, mayo and bonito flakes." },
+        { "name": "Thai Milk Tea", "source_item_name": "Thai Milk Tea", "source_image": "Cafe_Wow/thai_milk_tea.jpg", "photo": "cafe-wow/thai-milk-tea.jpg", "price_cents": 425, "price_estimated": true, "discount_pct": 60, "quantity_total": 15, "allergens": ["milk"], "note": "Thai milk tea, made when you pick up." },
+        { "name": "Okinawa Milk Tea", "source_item_name": "Okinawa Milk Tea", "source_image": "Cafe_Wow/okinawa_milk_tea.jpg", "photo": "cafe-wow/okinawa-milk-tea.jpg", "price_cents": 425, "price_estimated": true, "discount_pct": 55, "quantity_total": 15, "allergens": ["milk"], "note": "Brown sugar Okinawa milk tea, made when you pick up." },
+        { "name": "Mango Peach Iced Tea", "source_item_name": "Mango Peach Iced Tea", "source_image": "Cafe_Wow/mango_peach_iced_tea.jpg", "photo": "cafe-wow/mango-peach-iced-tea.jpg", "price_cents": 425, "price_estimated": true, "discount_pct": 62, "quantity_total": 12, "allergens": [], "note": "Mango and peach iced tea, made when you pick up." },
+        { "name": "Lychee Green Tea", "source_item_name": "Lychee Green Tea", "source_image": "Cafe_Wow/lychee_green_tea.jpg", "photo": "cafe-wow/lychee-green-tea.jpg", "price_cents": 425, "price_estimated": true, "discount_pct": 50, "quantity_total": 12, "allergens": [], "note": "Lychee green tea, made when you pick up." }
+      ]
+    },
+    {
+      "slug": "bakery-by-perkins",
+      "name": "Bakery By Perkins",
+      "category": "bakery",
+      "address": "525 Benner Pike, State College, PA 16801",
+      "lat": 40.8342615,
+      "lng": -77.8030832,
+      "phone": "+18142370307",
+      "closes_at": "22:00",
+      "sources": {
+        "address": ["https://perkinsrestaurants.com/location/perkins-restaurant-bakery-fran-2647-624068", "https://www.doordash.com/en/store/bakery-by-perkins-state-college-25073821/", "https://nominatim.openstreetmap.org (lat/lng)"],
+        "phone": ["https://perkinsrestaurants.com/location/perkins-restaurant-bakery-fran-2647-624068 ((814) 237-0307)"],
+        "closes_at": ["https://perkinsrestaurants.com/location/perkins-restaurant-bakery-fran-2647-624068 (6 AM - 10 PM every day)"],
+        "prices": ["https://www.doordash.com/en/store/bakery-by-perkins-state-college-25073821/ (Homestyle Apple Pie, WH $15.99; Cherry Pie, WH $15.99; Chocolate French Silk Pie, WH $16.99)", "https://www.doordash.com/business/bakery-by-perkins-750181/menu/ (Half Dozen Blueberry Mammoth Muffins $11.99)", "https://www.grubhub.com/restaurant/bakery-by-perkins-525-benner-pike-state-college/6036992 (New York Cheesecake Slice $5.29, used as the reference for pie slices)"]
+      },
+      "estimated_fields": [
+        "Half Dozen Blueberry Mammoth Muffins price: from DoorDash's chain-wide Bakery By Perkins menu, not confirmed for this store",
+        "Homestyle Apple Pie Slice and Cherry Pie Slice prices: typical $4.99 slice price (this store's cheesecake slice is $5.29)",
+        "Half Dozen Sugar Cookies price: typical State College price"
+      ],
+      "items": [
+        { "name": "Homestyle Apple Pie (whole)", "source_item_name": "Homestyle Apple Pie, WH", "source_image": "Bakery_By_Perkins/homestyle_apple_pie_wh.jpg", "photo": "bakery-by-perkins/homestyle-apple-pie-whole.jpg", "price_cents": 1599, "discount_pct": 45, "quantity_total": 10, "allergens": ["wheat", "milk", "egg"], "note": "Whole homestyle apple pie, baked today." },
+        { "name": "Cherry Pie (whole)", "source_item_name": "Cherry Pie, WH", "source_image": "Bakery_By_Perkins/cherry_pie_wh.jpg", "photo": "bakery-by-perkins/cherry-pie-whole.jpg", "price_cents": 1599, "discount_pct": 55, "quantity_total": 10, "allergens": ["wheat", "milk", "egg"], "note": "Whole cherry pie, baked today." },
+        { "name": "Chocolate French Silk Pie (whole)", "source_item_name": "Chocolate French Silk Pie, WH", "source_image": "Bakery_By_Perkins/chocolate_french_silk_pie_wh.jpg", "photo": "bakery-by-perkins/chocolate-french-silk-pie-whole.jpg", "price_cents": 1699, "discount_pct": 60, "quantity_total": 10, "allergens": ["wheat", "milk", "egg"], "note": "Whole chocolate French silk pie, made today." },
+        { "name": "Half Dozen Blueberry Mammoth Muffins", "source_item_name": "Half Dozen Blueberry Mammoth Muffins®", "source_image": "Bakery_By_Perkins/half_dozen_blueberry_mammoth_muffins.jpg", "photo": "bakery-by-perkins/half-dozen-blueberry-mammoth-muffins.jpg", "price_cents": 1199, "price_estimated": true, "discount_pct": 50, "quantity_total": 12, "allergens": ["wheat", "milk", "egg"], "note": "Six large blueberry muffins, baked today." },
+        { "name": "Homestyle Apple Pie Slice", "source_item_name": "Homestyle Apple Pie, slice", "source_image": "Bakery_By_Perkins/homestyle_apple_pie_slice.jpg", "photo": "bakery-by-perkins/homestyle-apple-pie-slice.jpg", "price_cents": 499, "price_estimated": true, "discount_pct": 40, "quantity_total": 15, "allergens": ["wheat", "milk", "egg"], "note": "A slice of homestyle apple pie, baked today." },
+        { "name": "Cherry Pie Slice", "source_item_name": "Cherry Pie, slice", "source_image": "Bakery_By_Perkins/cherry_pie_slice.jpg", "photo": "bakery-by-perkins/cherry-pie-slice.jpg", "price_cents": 499, "price_estimated": true, "discount_pct": 65, "quantity_total": 15, "allergens": ["wheat", "milk", "egg"], "note": "A slice of cherry pie, baked today." },
+        { "name": "Half Dozen Sugar Cookies", "source_item_name": "Half Dozen Sugar Cookies", "source_image": "Bakery_By_Perkins/half_dozen_sugar_cookies.jpg", "photo": "bakery-by-perkins/half-dozen-sugar-cookies.jpg", "price_cents": 799, "price_estimated": true, "discount_pct": 68, "quantity_total": 12, "allergens": ["wheat", "milk", "egg"], "note": "Six sugar cookies, baked today." }
+      ]
+    }
+  ]
+}

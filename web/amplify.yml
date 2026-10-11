@@ -1,0 +1,74 @@
+# Amplify Hosting build spec (Next.js 15 SSR, platform WEB_COMPUTE).
+# Amplify reads this file from the repo root. Steps: docs/DEPLOY.md.
+#
+# Runtime environment variables: Amplify gives console environment variables
+# to the build only. Next.js server code (route handlers) reads them at
+# runtime from .env.production, so the build writes the variables the server
+# needs into that file before `next build` (the approach in the Amplify docs:
+# https://docs.aws.amazon.com/amplify/latest/userguide/ssr-environment-variables.html).
+# Consequences:
+# - Changing a variable in the console takes effect only after a new build.
+# - A variable the server reads must be listed in RUNTIME_VARS below, or the
+#   server never sees it. Add new ones there (and to .env.example).
+# - Values end up in the build artifacts: names, ids and switches only, never
+#   secrets. AWS credentials come from the SSR compute role.
+#
+# The commands of a phase run in one shell (nvm use carries over), so the
+# checks run in subshells: a failed check fails the build without `exit`
+# ending the shell.
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        # The SSR runtime uses the Node.js major version the app was built with.
+        - nvm install 22 && nvm use 22
+        - >-
+          node --version | grep -q '^v22\.' || (echo "ERROR: Node.js 22 is not active ($(node --version))."; false)
+        - npm ci --no-audit --no-fund
+    build:
+      commands:
+        # 1. Write the server's runtime variables to .env.production. Names are printed, values are not.
+        - >-
+          RUNTIME_VARS='STORE_DRIVER|DYNAMODB_TABLE|APP_AWS_REGION|PHOTOS_DRIVER|PHOTOS_BUCKET|PHOTOS_PUBLIC_BASE_URL|LISTING_MODEL_PROVIDER|LISTING_MODEL_ID|LISTING_MODEL_TEMPERATURE|LISTING_TOOL_CHOICE|LISTING_MODEL_EXTRA_FIELDS|LISTING_PROMPT_VARIANT|PLAN_GATE|SEED_ON_START';
+          : > .env.production;
+          (env | grep -E "^($RUNTIME_VARS)=" >> .env.production || true);
+          echo "Runtime variables written to .env.production:"; cut -d= -f1 .env.production | sort
+        # 2. dotenv cuts unquoted values at '#' and expands '$': refuse values that would change on the way.
+        - >-
+          (bad=$(grep -E '[#$]' .env.production | cut -d= -f1);
+          if [ -n "$bad" ]; then echo "ERROR: these variables contain '#' or a dollar sign, which .env.production cannot carry unchanged: $bad"; false; fi)
+        # 3. Same rules as lib/config.ts checkConfig() in production, where an unset driver means the AWS one
+        #    (dynamodb, s3, bedrock). A broken combination would stop the server at startup; fail the build instead.
+        - >-
+          (fail=0;
+          lc() { printf '%s' "$1" | tr 'A-Z' 'a-z' | tr -d '[:space:]'; };
+          store=$(lc "$STORE_DRIVER"); store=${store:-dynamodb};
+          photos=$(lc "$PHOTOS_DRIVER"); photos=${photos:-s3};
+          listing=$(lc "$LISTING_MODEL_PROVIDER"); listing=${listing:-bedrock};
+          case "$store" in memory|dynamodb) ;; *) echo "ERROR: STORE_DRIVER must be memory or dynamodb."; fail=1;; esac;
+          case "$photos" in local|s3) ;; *) echo "ERROR: PHOTOS_DRIVER must be local or s3."; fail=1;; esac;
+          case "$listing" in fake|bedrock) ;; *) echo "ERROR: LISTING_MODEL_PROVIDER must be fake or bedrock."; fail=1;; esac;
+          if [ "$store" = dynamodb ] && [ -z "$DYNAMODB_TABLE" ]; then echo "ERROR: DYNAMODB_TABLE is required when STORE_DRIVER=dynamodb (the production default). Use stack output TableName."; fail=1; fi;
+          if [ "$photos" = s3 ] && [ -z "$PHOTOS_BUCKET" ]; then echo "ERROR: PHOTOS_BUCKET is required when PHOTOS_DRIVER=s3 (the production default). Use stack output PhotosBucketName."; fail=1; fi;
+          if [ "$listing" = bedrock ] && [ -z "$LISTING_MODEL_ID" ]; then echo "ERROR: LISTING_MODEL_ID is required when LISTING_MODEL_PROVIDER=bedrock (the production default)."; fail=1; fi;
+          if [ "$store" = memory ]; then echo "WARNING: STORE_DRIVER=memory: data lives in one server instance's memory and is lost. Use dynamodb for the demo."; fi;
+          if [ "$photos" = local ]; then echo "WARNING: PHOTOS_DRIVER=local: Amplify cannot keep photo files (drafts get photo_url null)."; fi;
+          if [ "$listing" = fake ]; then echo "WARNING: LISTING_MODEL_PROVIDER=fake: drafts come from the rule-based stand-in, not a model."; fi;
+          if [ -z "$APP_AWS_REGION" ]; then echo "WARNING: APP_AWS_REGION is not set: AWS clients use the runtime's own region."; fi;
+          echo "Drivers: store=$store photos=$photos listing=$listing";
+          [ "$fail" = 0 ])
+        # 4. Build. NEXT_DIST_DIR and NEXT_OUTPUT are local-only switches; Amplify expects the default .next output.
+        #    One retry: next/font's download from Google Fonts failed now and then on a cold build (2 of 5 test builds).
+        - >-
+          env -u NEXT_DIST_DIR -u NEXT_OUTPUT NEXT_TELEMETRY_DISABLED=1 npm run build ||
+          (echo "Build failed; retrying once (next/font sometimes fails to download the font on a cold build).";
+          env -u NEXT_DIST_DIR -u NEXT_OUTPUT NEXT_TELEMETRY_DISABLED=1 npm run build)
+  artifacts:
+    baseDirectory: .next
+    files:
+      - "**/*"
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*

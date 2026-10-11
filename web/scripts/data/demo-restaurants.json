@@ -1,0 +1,116 @@
+{
+  "about": "Four State College restaurants for the demo, enriched from the team's scraped photo set (combined_restaurant_menu_photos.zip, branch dev-david of HelpingYouSellFoodCompile26). Loaded with scripts/import-demo-restaurants.ts. Allergens are demo placeholders; the real merchants must confirm them.",
+  "researched_on": "2026-10-11",
+  "photo_base_url": "https://c0mpiled-photos-949603589879-us-east-2.s3.us-east-2.amazonaws.com/photos/demo/",
+  "photo_note": "item.photo is the resized JPEG (max 1280 px, quality 80) under photo_base_url. The API sets Deal.photo_url only from POST /merchants/{id}/drafts, so the importer sends that photo there and the backend stores its own copy under photos/.",
+  "default_discount_pct": 40,
+  "deal_defaults": {
+    "pickup_end_local": "23:30",
+    "max_per_customer": 3,
+    "deal_price_rule": "regular price x 0.6, rounded down to a multiple of 25 cents",
+    "kind_rule": "surplus when pickup_end is within 2 h of closes_at, else timed (same rule the API uses for manual deals)"
+  },
+  "restaurants": [
+    {
+      "slug": "cafe-alina",
+      "name": "Cafe Alina",
+      "category": "restaurant",
+      "address": "421 E Calder Way, State College, PA 16801",
+      "lat": 40.7979851,
+      "lng": -77.8558611,
+      "phone": "+18149545816",
+      "closes_at": "22:00",
+      "sources": {
+        "address": ["https://orders.cake.net/11222700", "https://www.grubhub.com/restaurant/cafe-alina-421-e-calder-way-state-college/2064483", "https://nominatim.openstreetmap.org (lat/lng)"],
+        "phone": ["https://orders.cake.net/11222700", "https://wanderlog.com/place/details/3169048/cafe-alina"],
+        "closes_at": ["https://orders.cake.net/11222700 (Sun 11:00 AM - 10:00 PM)"],
+        "prices": ["https://orders.cake.net/11222700 (restaurant's own online ordering)"]
+      },
+      "estimated_fields": [],
+      "items": [
+        { "name": "Chicken Biryani", "source_item_name": "Chicken Biryani", "source_image": "Cafe_Alina/chicken_biryani.jpg", "photo": "cafe-alina/chicken-biryani.jpg", "price_cents": 1395, "quantity_total": 15, "allergens": ["milk"], "note": "Bone-in chicken biryani with raita, cooked today." },
+        { "name": "Chicken Karahi", "source_item_name": "Chicken Karahi", "source_image": "Cafe_Alina/chicken_karahi.png", "photo": "cafe-alina/chicken-karahi.jpg", "price_cents": 1395, "quantity_total": 12, "allergens": [], "note": "Bone-in chicken in a tomato and onion gravy, made today." },
+        { "name": "Dal Bowl", "source_item_name": "Dal Bowl", "source_image": "Cafe_Alina/dal_bowl.jpg", "photo": "cafe-alina/dal-bowl.jpg", "price_cents": 999, "quantity_total": 15, "allergens": [], "note": "Slow-cooked spiced lentils, made today." },
+        { "name": "Half-Chicken Charga", "source_item_name": "Half-Chicken Charga", "source_image": "Cafe_Alina/half_chicken_charga.jpeg", "photo": "cafe-alina/half-chicken-charga.jpg", "price_cents": 1699, "quantity_total": 10, "allergens": ["milk"], "note": "Half chicken over rice pilau with mint yogurt chutney." },
+        { "name": "Mutton Karahi", "source_item_name": "Mutton Karahi", "source_image": "Cafe_Alina/mutton_karahi.jpg", "photo": "cafe-alina/mutton-karahi.jpg", "price_cents": 1999, "quantity_total": 10, "allergens": [], "note": "Mutton cooked in a spiced tomato gravy, made today." }
+      ]
+    },
+    {
+      "slug": "tasty-k",
+      "name": "Tasty K",
+      "category": "restaurant",
+      "address": "325 E Calder Way, State College, PA 16801",
+      "lat": 40.7968293,
+      "lng": -77.8576021,
+      "phone": "+18149548180",
+      "closes_at": "21:00",
+      "sources": {
+        "address": ["https://downtown-state-college-pa.yiftee.com/business/tasty-k-559555", "https://www.menuguide.com/PA/State-College/Tasty-K", "https://nominatim.openstreetmap.org (lat/lng)"],
+        "phone": ["https://www.tastyk.com/menu.html", "https://m.yelp.com/biz/tasty-k-no-title"],
+        "closes_at": ["https://www.tastyk.com/menu.html (Mon-Wed dinner 5:00-9:00 PM; the site lists Sunday as 12:00-2:30 AM only)"],
+        "prices": ["https://www.tastyk.com/menu.html (Fries $3.00, Big Size Fries $11.99)", "https://www.ubereats.com/store/tasty-k/str8p1IDWYm8A-NCA9oIQg (delivery prices: Fried Chicken 1lb $14.99, Mini Fried Chicken 0.5 lb $11.39, Fries $3.60)"]
+      },
+      "estimated_fields": [
+        "closes_at: the official site shows no Sunday evening hours; 21:00 is its Mon-Wed closing time",
+        "Fried Chicken (1 lb) price: Uber Eats $14.99 divided by the 1.2 delivery markup seen on fries ($3.60 vs $3.00 in store)",
+        "Mini Fried Chicken (0.5 lb) price: Uber Eats $11.39 divided by the same 1.2 markup"
+      ],
+      "items": [
+        { "name": "Fried Chicken (1 lb)", "source_item_name": "Fried Chicken 1lb", "source_image": "Tasty_K/fried_chicken_1lb.png", "photo": "tasty-k/fried-chicken-1lb.jpg", "price_cents": 1249, "price_estimated": true, "quantity_total": 15, "allergens": ["wheat"], "note": "Korean fried chicken, one pound, fried tonight." },
+        { "name": "Mini Fried Chicken (0.5 lb)", "source_item_name": "Mini Fried Chicken 0.5 lb", "source_image": "Tasty_K/mini_fried_chicken_0_5_lb.jpg", "photo": "tasty-k/mini-fried-chicken-half-lb.jpg", "price_cents": 949, "price_estimated": true, "quantity_total": 20, "allergens": ["wheat"], "note": "Half a pound of Korean fried chicken, fried tonight." },
+        { "name": "Big Size Fries (serves 3-4)", "source_item_name": "Big Size Fries (3-4people)", "source_image": "Tasty_K/big_size_fries_3_4people.jpg", "photo": "tasty-k/big-size-fries.jpg", "price_cents": 1199, "quantity_total": 10, "allergens": [], "note": "A shareable box of crispy fries for three or four." },
+        { "name": "Fries", "source_item_name": "Fries", "source_image": "Tasty_K/fries.png", "photo": "tasty-k/fries.jpg", "price_cents": 300, "quantity_total": 20, "allergens": [], "note": "Crispy fries, fried to order." }
+      ]
+    },
+    {
+      "slug": "giuseppes-pizzeria",
+      "name": "Giuseppe's Pizzeria",
+      "category": "restaurant",
+      "address": "204 E College Ave, State College, PA 16801",
+      "lat": 40.7953562,
+      "lng": -77.8601597,
+      "phone": "+18148262242",
+      "closes_at": "21:00",
+      "sources": {
+        "address": ["https://order.online/business/-11762314", "https://slicelife.com/restaurants/pa/state-college/16801/giuseppe-s-pizzeria-by-brothers/menu", "https://nominatim.openstreetmap.org (lat/lng)"],
+        "phone": ["https://order.online/business/-11762314", "https://www.yelp.com/biz/giuseppes-pizzeria-by-brothers-state-college", "https://www.facebook.com/p/Giuseppes-Pizzeria-by-Brothers-61553011426044/"],
+        "closes_at": ["https://www.ubereats.com/store/giuseppes-pizzeria-by-brothers/b7xHonnFXaiOrlvc3kuvRw (Sunday 9:30 AM - 9:00 PM)"],
+        "prices": ["https://order.online/business/-11762314 (Sm Cheese $15.25, Md Cheese $19.00, Lg Cheese $20.65, Lg Meat Lover $33.75)"]
+      },
+      "estimated_fields": [],
+      "items": [
+        { "name": "Small Cheese Pizza", "source_item_name": "Sm Cheese", "source_image": "Giuseppes_Pizzeria/sm_cheese.jpg", "photo": "giuseppes-pizzeria/small-cheese-pizza.jpg", "price_cents": 1525, "quantity_total": 10, "allergens": ["wheat", "milk"], "note": "Whole small cheese pie on fresh dough made daily." },
+        { "name": "Medium Cheese Pizza", "source_item_name": "Md Cheese", "source_image": "Giuseppes_Pizzeria/md_cheese.jpg", "photo": "giuseppes-pizzeria/medium-cheese-pizza.jpg", "price_cents": 1900, "quantity_total": 10, "allergens": ["wheat", "milk"], "note": "Whole medium cheese pie on fresh dough made daily." },
+        { "name": "Large Cheese Pizza", "source_item_name": "Lg Cheese", "source_image": "Giuseppes_Pizzeria/lg_cheese.jpg", "photo": "giuseppes-pizzeria/large-cheese-pizza.jpg", "price_cents": 2065, "quantity_total": 10, "allergens": ["wheat", "milk"], "note": "Whole large cheese pie, good for sharing." },
+        { "name": "Large Meat Lover Pizza", "source_item_name": "Lg Meat Lover", "source_image": "Giuseppes_Pizzeria/lg_meat_lover.jpg", "photo": "giuseppes-pizzeria/large-meat-lover-pizza.jpg", "price_cents": 3375, "quantity_total": 10, "allergens": ["wheat", "milk"], "note": "Pepperoni, sausage, ham, bacon and meatballs on a large pie." }
+      ]
+    },
+    {
+      "slug": "chick-2",
+      "name": "Chick 2",
+      "category": "restaurant",
+      "address": "128 E College Ave, State College, PA 16801",
+      "lat": 40.7949076,
+      "lng": -77.860745,
+      "phone": "+19177244911",
+      "closes_at": "23:30",
+      "sources": {
+        "address": ["https://www.doordash.com/store/chick-2-state-college-859160/", "https://www.statecollege.com/articles/local-news/late-night-food-stop-chick-2-to-open-in-former-mamma-mias-location/", "https://nominatim.openstreetmap.org (lat/lng)"],
+        "phone": ["https://wanderlog.com/place/details/10825968/chick-2"],
+        "closes_at": ["https://m.yelp.com/biz/chick-2-state-college (Mon-Wed 11:00 AM - 11:30 PM)"],
+        "prices": ["https://www.doordash.com/store/chick-2-state-college-859160/ (BBQ Chicken OverRice $10.99, Thai Yellow Curry Chicken OverRice $12.99)", "https://www.seamless.com/menu/chick-2-over-rice-128-e-college-ave-state-college/1392693 (search listing: Chicken Over Rice $9.99, Chicken & Beef OverRice $10.75)"]
+      },
+      "estimated_fields": [
+        "item names: the source photos were unlabeled; names describe what is visible and match the closest DoorDash/Seamless menu item",
+        "closes_at: Yelp lists Mon-Wed 11:30 PM; no Sunday hours were found",
+        "phone: only one source (Wanderlog), and it has a 917 (New York) area code"
+      ],
+      "items": [
+        { "name": "Chicken Over Rice", "source_item_name": "Unidentified menu photo 1", "source_image": "Chick_2/menu_photo_1.jpg", "photo": "chick-2/chicken-over-rice.jpg", "price_cents": 999, "quantity_total": 20, "allergens": ["egg"], "note": "Grilled chicken over yellow rice with white sauce." },
+        { "name": "BBQ Chicken Over Rice", "source_item_name": "Unidentified menu photo 2", "source_image": "Chick_2/menu_photo_2.jpg", "photo": "chick-2/bbq-chicken-over-rice.jpg", "price_cents": 1099, "quantity_total": 15, "allergens": ["egg"], "note": "BBQ-glazed chicken over rice with salad and white sauce." },
+        { "name": "Curry Chicken Over Rice", "source_item_name": "Unidentified menu photo 3", "source_image": "Chick_2/menu_photo_3.jpeg", "photo": "chick-2/curry-chicken-over-rice.jpg", "price_cents": 1299, "quantity_total": 15, "allergens": [], "note": "Chicken in yellow curry sauce over white rice." },
+        { "name": "Chicken and Beef Over Rice", "source_item_name": "Unidentified menu photo 4", "source_image": "Chick_2/menu_photo_4.jpeg", "photo": "chick-2/chicken-and-beef-over-rice.jpg", "price_cents": 1075, "quantity_total": 15, "allergens": [], "note": "Glazed chicken and beef over rice with salad." }
+      ]
+    }
+  ]
+}

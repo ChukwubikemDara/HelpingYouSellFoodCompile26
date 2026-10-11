@@ -1,0 +1,304 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Data, photo storage and IAM for the web app (one Next.js app on Amplify Hosting):
+  one DynamoDB single-table store, one S3 photos bucket whose photos/ prefix is
+  public-read, a least-privilege app policy, and the SSR compute role Amplify
+  assumes. Creates no Amplify app and no billing resources.
+
+Metadata:
+  AWSToolsMetrics:
+    AWSAgentToolkit: aws-cloudformation@3
+  com.aws.cloudformation.Context:
+    arch: Amplify SSR (compute role) -> DynamoDB table + S3 photos bucket + Bedrock Converse
+    must:
+      - Table keys/GSIs == lib/store/dynamodb/schema.ts tableDefinition() (tests/store/dynamodb-template.test.ts checks)
+      - no billing/payment resources (CLAUDE.md)
+    ref:
+      - docs/AWS.md
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label: { default: Naming }
+        Parameters: [NamePrefix]
+      - Label: { default: Listing model (Amazon Bedrock) }
+        Parameters: [BedrockModelPattern, AllowBedrockMarketplaceSubscribe]
+      - Label: { default: Fallback hosting }
+        Parameters: [CreateAppRunnerRole]
+
+Parameters:
+  NamePrefix:
+    Type: String
+    Default: app
+    AllowedPattern: "^[a-z][a-z0-9-]{0,26}[a-z0-9]$"
+    ConstraintDescription: 2-28 characters, lowercase letters, digits and hyphens, starting with a letter.
+    Description: >-
+      Prefix for every resource name: table <prefix>-main, bucket
+      <prefix>-photos-<account>-<region>, role <prefix>-ssr-compute, policy <prefix>-app-access.
+  BedrockModelPattern:
+    Type: String
+    Default: "anthropic.claude-*"
+    AllowedPattern: "^[A-Za-z0-9.:*-]+$"
+    Description: >-
+      Foundation-model id pattern the app may invoke (IAM wildcard). Inference
+      profiles "<geo>.<pattern>" (us., eu., apac., global.) are allowed too.
+      Narrow it to the exact model in LISTING_MODEL_ID if you like.
+  AllowBedrockMarketplaceSubscribe:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "true"
+    Description: >-
+      "true" lets the app role accept the model's AWS Marketplace agreement on its
+      first Bedrock call (only through Bedrock). Set "false" if an admin already
+      invoked the model once in this account.
+  CreateAppRunnerRole:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "false"
+    Description: '"true" also creates an App Runner instance role with the same policy (Docker fallback).'
+
+Conditions:
+  AllowMarketplace: !Equals [!Ref AllowBedrockMarketplaceSubscribe, "true"]
+  WithAppRunnerRole: !Equals [!Ref CreateAppRunnerRole, "true"]
+
+Resources:
+  Table:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: single table for every Store record; overloaded GSIs serve all list patterns (docs/AWS.md); on-demand = no capacity planning
+        must:
+          - key/GSI names & types fixed by the driver; renaming = data loss + code change
+          - GSI projection ALL (driver reads records from indexes)
+        mutable: review-required
+    Properties:
+      TableName: !Sub "${NamePrefix}-main"
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: PK, AttributeType: S }
+        - { AttributeName: SK, AttributeType: S }
+        - { AttributeName: GSI1PK, AttributeType: S }
+        - { AttributeName: GSI1SK, AttributeType: S }
+        - { AttributeName: GSI2PK, AttributeType: S }
+        - { AttributeName: GSI2SK, AttributeType: S }
+        - { AttributeName: GSI3PK, AttributeType: S }
+        - { AttributeName: GSI3SK, AttributeType: S }
+        - { AttributeName: GSI4PK, AttributeType: S }
+        - { AttributeName: GSI4SK, AttributeType: S }
+      KeySchema:
+        - { AttributeName: PK, KeyType: HASH }
+        - { AttributeName: SK, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - { AttributeName: GSI1PK, KeyType: HASH }
+            - { AttributeName: GSI1SK, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: GSI2
+          KeySchema:
+            - { AttributeName: GSI2PK, KeyType: HASH }
+            - { AttributeName: GSI2SK, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: GSI3
+          KeySchema:
+            - { AttributeName: GSI3PK, KeyType: HASH }
+            - { AttributeName: GSI3SK, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: GSI4
+          KeySchema:
+            - { AttributeName: GSI4PK, KeyType: HASH }
+            - { AttributeName: GSI4SK, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+      # Encrypted at rest with the AWS owned key (default, no KMS charges).
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      Tags:
+        - { Key: app, Value: !Ref NamePrefix }
+
+  PhotosBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: deal photos; served straight from S3 under photos/ (lead decision; no CDN)
+        must:
+          - BlockPublicPolicy & RestrictPublicBuckets false, else photos/* public-read policy is blocked
+          - ACLs stay disabled (BucketOwnerEnforced); public access only via bucket policy
+        mutable: change-with-constraints
+    Properties:
+      BucketName: !Sub "${NamePrefix}-photos-${AWS::AccountId}-${AWS::Region}"
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        IgnorePublicAcls: true
+        BlockPublicPolicy: false
+        RestrictPublicBuckets: false
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-old-versions-and-stale-uploads
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      Tags:
+        - { Key: app, Value: !Ref NamePrefix }
+
+  PhotosBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: public read of photos/* only; everything else private; HTTPS only
+        must:
+          - never widen public read beyond photos/*
+    Properties:
+      Bucket: !Ref PhotosBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadPhotos
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${PhotosBucket.Arn}/photos/*"
+          - Sid: DenyInsecureTransport
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !GetAtt PhotosBucket.Arn
+              - !Sub "${PhotosBucket.Arn}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+  AppAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: everything the server code calls, nothing more (no Scan, no table admin, no S3 list/delete)
+        must:
+          - dynamodb actions == what lib/store/dynamodb sends (GetItem BatchGetItem Query PutItem UpdateItem DeleteItem; TransactWriteItems is authorized per action)
+          - S3 writes only under photos/
+        mutable: review-required
+    Properties:
+      ManagedPolicyName: !Sub "${NamePrefix}-app-access"
+      Description: Least-privilege access for the web app's server code (DynamoDB table, photos bucket, Bedrock listing model).
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: TableReadWrite
+            Effect: Allow
+            Action:
+              - dynamodb:GetItem
+              - dynamodb:BatchGetItem
+              - dynamodb:Query
+              - dynamodb:PutItem
+              - dynamodb:UpdateItem
+              - dynamodb:DeleteItem
+            Resource:
+              - !GetAtt Table.Arn
+              - !Sub "${Table.Arn}/index/*"
+          - Sid: PhotosReadWrite
+            Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetObject
+            Resource: !Sub "${PhotosBucket.Arn}/photos/*"
+          - Sid: ListingModel
+            Effect: Allow
+            Action: bedrock:InvokeModel
+            Resource:
+              # In-region and cross-region (us./eu./apac.) inference.
+              - !Sub "arn:${AWS::Partition}:bedrock:*::foundation-model/${BedrockModelPattern}"
+              # Global cross-region inference names the model without a region.
+              - !Sub "arn:${AWS::Partition}:bedrock:::foundation-model/${BedrockModelPattern}"
+              - !Sub "arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:inference-profile/*.${BedrockModelPattern}"
+          - !If
+            - AllowMarketplace
+            - Sid: BedrockFirstUseAgreement
+              Effect: Allow
+              Action:
+                - aws-marketplace:Subscribe
+                - aws-marketplace:ViewSubscriptions
+              Resource: "*"
+              Condition:
+                StringEquals:
+                  aws:CalledViaLast: bedrock.amazonaws.com
+            - !Ref AWS::NoValue
+
+  SsrComputeRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: Amplify Hosting SSR compute role; temporary credentials reach the Next.js server via the SDK default chain
+        must:
+          - trust exactly amplify.amazonaws.com (Amplify console rejects other trust policies)
+    Properties:
+      RoleName: !Sub "${NamePrefix}-ssr-compute"
+      Description: Assumed by Amplify Hosting SSR compute for the web app.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: amplify.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref AppAccessPolicy
+      Tags:
+        - { Key: app, Value: !Ref NamePrefix }
+
+  AppRunnerInstanceRole:
+    Type: AWS::IAM::Role
+    Condition: WithAppRunnerRole
+    Metadata:
+      com.aws.cloudformation.Context:
+        why: fallback hosting (root Dockerfile on App Runner) with the same permissions
+    Properties:
+      RoleName: !Sub "${NamePrefix}-apprunner-instance"
+      Description: Instance role for the web app on App Runner (fallback hosting).
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: tasks.apprunner.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - !Ref AppAccessPolicy
+      Tags:
+        - { Key: app, Value: !Ref NamePrefix }
+
+Outputs:
+  TableName:
+    Description: Set as DYNAMODB_TABLE.
+    Value: !Ref Table
+  PhotosBucketName:
+    Description: Set as PHOTOS_BUCKET.
+    Value: !Ref PhotosBucket
+  PhotosPublicBaseUrl:
+    Description: Public base URL of the bucket (objects under photos/ are readable). Optional PHOTOS_PUBLIC_BASE_URL.
+    Value: !Sub "https://${PhotosBucket.RegionalDomainName}"
+  SsrComputeRoleArn:
+    Description: Attach in Amplify console > App settings > IAM roles > Compute role.
+    Value: !GetAtt SsrComputeRole.Arn
+  AppRunnerInstanceRoleArn:
+    Condition: WithAppRunnerRole
+    Description: Instance role for the App Runner service (fallback hosting).
+    Value: !GetAtt AppRunnerInstanceRole.Arn
+  AppAccessPolicyArn:
+    Description: The app's managed policy (attach to any other runtime role).
+    Value: !Ref AppAccessPolicy
+  Region:
+    Description: Set as APP_AWS_REGION.
+    Value: !Ref AWS::Region

@@ -1,0 +1,21 @@
+# Build context for the root Dockerfile (`docker build -t web .`).
+# Secrets never enter the build context.
+.npmrc
+.env*
+*.pem
+*:Zone.Identifier
+
+# Not needed to build the image. docs/ also holds team-only notes (docs/build-notes.md).
+.git
+docs
+CLAUDE.md
+README.md
+
+# Local installs and build output: the image installs and builds its own.
+node_modules
+.next
+.next*
+.data
+coverage
+*.tsbuildinfo
+next-env.d.ts
