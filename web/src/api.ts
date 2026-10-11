@@ -1,6 +1,8 @@
+import { MockError, mockRequest } from './mock'
 import type { Deal, Draft, ErrorCode, Merchant, Reservation, Summary } from './types'
 
 const BASE = (import.meta.env.VITE_API_URL ?? '') + '/api'
+const USE_MOCK = import.meta.env.VITE_API_MOCK === '1'
 
 export class ApiError extends Error {
   code: ErrorCode
@@ -13,6 +15,15 @@ export class ApiError extends Error {
 
 async function req<T>(method: string, path: string, body?: unknown): Promise<T> {
   const merchantId = localStorage.getItem('merchant_id')
+
+  if (USE_MOCK) {
+    try {
+      return (await mockRequest(method, path, body, merchantId)) as T
+    } catch (e) {
+      if (e instanceof MockError) throw new ApiError(e.code, e.message)
+      throw e
+    }
+  }
 
   const headers: Record<string, string> = {}
   if (body !== undefined) headers['Content-Type'] = 'application/json'
