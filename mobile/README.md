@@ -30,5 +30,13 @@ backend's address. A phone can't reach the laptop as `localhost`: use the
 laptop's LAN IP (e.g. `http://192.168.1.20:8000`) or the deployed URL. Restart
 `expo start` after changing `.env`.
 
+## Store portal link
+
+The Profile tab shows an "I run a store" row that opens the web portal in an
+in-app browser when `EXPO_PUBLIC_PORTAL_URL` is set. Deployed: put the portal's
+URL in `.env`. Demo off a laptop: start the portal with `npm run dev -- --host`
+in `../web`, and put `EXPO_PUBLIC_PORTAL_URL=http://<laptop-ip>:5173` in
+`.env.local`. Restart `expo start` after changing either file.
+
 `src/types.ts`, `src/format.ts`, `src/hooks.ts` and `src/mock.ts` mirror the
 files in `../web/src`. Keep them in step when the contract changes.

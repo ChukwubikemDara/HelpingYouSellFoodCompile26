@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
+import * as WebBrowser from 'expo-web-browser'
 import { useState } from 'react'
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { api } from '../api'
 import { Button, ErrorNote, Field, T, type IoniconName } from '../components/ui'
@@ -10,6 +11,18 @@ import { useProfile } from '../profile'
 import { normalizePhone, prettyPhone } from '../storage'
 import { colors, fonts, radius } from '../theme'
 import type { Reservation } from '../types'
+
+// Where the store portal (../web) is hosted. Unset in a build means the row is hidden.
+const PORTAL_URL = process.env.EXPO_PUBLIC_PORTAL_URL
+
+function openPortal() {
+  if (!PORTAL_URL) return
+  // in-app browser: the store owner stays inside the app and can swipe back
+  WebBrowser.openBrowserAsync(`${PORTAL_URL}/merchant`, {
+    controlsColor: colors.ember,
+    toolbarColor: colors.paper,
+  }).catch(() => Alert.alert('Couldn’t open the store portal', 'Check your connection and try again.'))
+}
 
 const HOW_IT_WORKS: { icon: IoniconName; text: string }[] = [
   { icon: 'pricetag', text: 'Stores list what’s left before closing, at a discount.' },
@@ -174,7 +187,32 @@ export function Profile() {
           <T variant="small">Pickup only. No delivery, and no payment in the app.</T>
         </View>
 
-        {(profile.name || profile.phone) && (
+        {!!PORTAL_URL && (
+          <View style={styles.section}>
+            <T variant="eyebrow">FOR STORES</T>
+            <Pressable
+              onPress={openPortal}
+              accessibilityRole="link"
+              accessibilityLabel="I run a store. Open the store portal."
+              style={({ pressed }) => [styles.storeRow, pressed && { opacity: 0.85 }]}
+            >
+              <View style={styles.storeIcon}>
+                <Ionicons name="storefront" size={20} color={colors.ink} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <T variant="heading" style={{ color: colors.paper }}>
+                  I run a store
+                </T>
+                <T variant="small" style={{ color: '#CFC4B5' }}>
+                  List what’s left tonight and get paid for it.
+                </T>
+              </View>
+              <Ionicons name="arrow-forward" size={18} color={colors.paper} />
+            </Pressable>
+          </View>
+        )}
+
+        {!!(profile.name || profile.phone) && (
           <Button title="Remove my details from this phone" variant="ghostDanger" onPress={confirmClear} />
         )}
       </ScrollView>
@@ -206,6 +244,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     paddingHorizontal: 16,
+  },
+  storeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: colors.ink,
+    borderRadius: radius.lg,
+    padding: 16,
+  },
+  storeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.marigold,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   howRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 14 },
   howRowBorder: { borderTopWidth: 1, borderTopColor: colors.line },
