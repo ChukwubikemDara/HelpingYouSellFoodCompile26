@@ -1,9 +1,16 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 const linkClass = ({ isActive }: { isActive: boolean }) =>
   `px-2 py-1 text-sm ${isActive ? 'font-semibold text-emerald-700' : 'text-stone-600 hover:text-stone-900'}`
 
 export function Layout() {
+  // BrowserRouter keeps the old scroll position; start each screen at the top
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+
   return (
     <div className="mx-auto min-h-screen max-w-md">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200 bg-stone-50/95 px-4 py-3 backdrop-blur">
