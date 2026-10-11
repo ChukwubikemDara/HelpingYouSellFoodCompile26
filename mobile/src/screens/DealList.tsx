@@ -1,44 +1,23 @@
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons'
 import { useState } from 'react'
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { api } from '../api'
-import { Card, colors, ErrorNote, Loading } from '../components/ui'
-import { clock, money, percentOff } from '../format'
-import { useLoad } from '../hooks'
-import type { ScreenProps } from '../navigation'
-import type { Category, Deal } from '../types'
+import { DealCard, HeroDealCard } from '../components/DealCard'
+import { EmptyState, ErrorNote, Loading, T } from '../components/ui'
+import { greeting } from '../format'
+import { useLoad, useNow } from '../hooks'
+import type { TabProps } from '../navigation'
+import { useProfile } from '../profile'
+import { categoryArt, colors, fonts, radius } from '../theme'
+import type { Category } from '../types'
 
-const FILTERS: { value: Category | ''; label: string }[] = [
-  { value: '', label: 'All' },
-  { value: 'bakery', label: 'Bakery' },
-  { value: 'cafe', label: 'Cafe' },
-  { value: 'restaurant', label: 'Restaurant' },
-]
+const CATEGORIES: Category[] = ['bakery', 'cafe', 'restaurant']
 
-function DealCard({ deal, onPress }: { deal: Deal; onPress: () => void }) {
-  const soldOut = deal.status === 'sold_out'
-  return (
-    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={`${deal.title}, ${deal.merchant.name}`}>
-      <Card style={[styles.card, soldOut && { opacity: 0.55 }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.merchant}>{deal.merchant.name.toUpperCase()}</Text>
-          <Text style={styles.title} numberOfLines={1}>
-            {deal.title}
-          </Text>
-          <Text style={styles.meta}>
-            Pick up by {clock(deal.pickup_end)} · {soldOut ? 'Sold out' : `${deal.quantity_left} left`}
-          </Text>
-        </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <Text style={styles.price}>{money(deal.deal_price_cents)}</Text>
-          <Text style={styles.was}>{money(deal.original_price_cents)}</Text>
-          <Text style={styles.off}>{percentOff(deal.original_price_cents, deal.deal_price_cents)}% off</Text>
-        </View>
-      </Card>
-    </Pressable>
-  )
-}
-
-export function DealList({ navigation }: ScreenProps<'Deals'>) {
+export function DealList({ navigation }: TabProps<'Deals'>) {
+  const insets = useSafeAreaInsets()
+  const { profile } = useProfile()
+  const now = useNow()
   const [category, setCategory] = useState<Category | ''>('')
   const [refreshing, setRefreshing] = useState(false)
   const { data: deals, error, loading, reload } = useLoad(() => api.deals(category), category, 30_000)
@@ -49,63 +28,138 @@ export function DealList({ navigation }: ScreenProps<'Deals'>) {
     setRefreshing(false)
   }
 
+  // the feed arrives soonest-ending first; lead with the first one you can still get
+  const hero = deals?.find((d) => d.status === 'live')
+  const rest = deals?.filter((d) => d.id !== hero?.id) ?? []
+  const liveCount = deals?.filter((d) => d.status === 'live').length ?? 0
+  const firstName = profile.name.split(' ')[0]
+  const open = (id: string) => navigation.navigate('Deal', { id })
+
   return (
     <FlatList
-      style={{ backgroundColor: colors.bg }}
-      contentContainerStyle={styles.list}
-      data={deals ?? []}
+      style={{ backgroundColor: colors.paper }}
+      contentContainerStyle={[styles.list, { paddingTop: insets.top + 12 }]}
+      data={rest}
       keyExtractor={(d) => d.id}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.primary} />}
+      showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.ember} />}
       ListHeaderComponent={
-        <View style={{ gap: 12 }}>
-          <Text style={styles.tagline}>Good food from State College spots, before it goes to waste.</Text>
-          <View style={styles.filters}>
-            {FILTERS.map((f) => {
-              const active = category === f.value
-              return (
-                <Pressable
-                  key={f.value}
-                  onPress={() => setCategory(f.value)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  style={[styles.chip, active && styles.chipActive]}
-                >
-                  <Text style={{ color: active ? '#fff' : '#44403c' }}>{f.label}</Text>
-                </Pressable>
-              )
-            })}
+        <View style={{ gap: 18 }}>
+          <View style={styles.topRow}>
+            <View style={styles.location}>
+              <Ionicons name="location" size={14} color={colors.ember} />
+              <T variant="small" style={{ fontFamily: fonts.bold, color: colors.ink }}>
+                State College, PA
+              </T>
+            </View>
+            <T variant="small">
+              {greeting(now)}
+              {firstName ? `, ${firstName}` : ''}
+            </T>
           </View>
+
+          <View style={{ gap: 4 }}>
+            <Text style={styles.headline}>
+              Tonight’s <Text style={styles.headlineAccent}>last call</Text>
+            </Text>
+            {deals && (
+              <T>
+                {liveCount === 0
+                  ? 'Nothing up for grabs right now.'
+                  : `${liveCount} ${liveCount === 1 ? 'deal' : 'deals'} up for grabs before closing.`}
+              </T>
+            )}
+          </View>
+
+          {/* bleeds to the screen edges so a fourth chip scrolls instead of wrapping */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.chipScroll}
+            contentContainerStyle={styles.chips}
+          >
+            <Chip label="All" active={category === ''} onPress={() => setCategory('')} />
+            {CATEGORIES.map((c) => (
+              <Chip
+                key={c}
+                label={categoryArt[c].label}
+                icon={categoryArt[c].icon}
+                active={category === c}
+                onPress={() => setCategory(c)}
+              />
+            ))}
+          </ScrollView>
+
           {loading && <Loading />}
           <ErrorNote message={error?.message} />
+
+          {hero && (
+            <View style={{ gap: 10 }}>
+              <T variant="eyebrow">ENDING SOONEST</T>
+              <HeroDealCard deal={hero} now={now} onPress={() => open(hero.id)} />
+            </View>
+          )}
+          {rest.length > 0 && <T variant="eyebrow">{hero ? 'MORE NEARBY' : 'SOLD OUT FOR NOW'}</T>}
         </View>
       }
       ListEmptyComponent={
-        deals ? <Text style={styles.empty}>Nothing live right now. Check back closer to closing time.</Text> : null
+        deals && !hero ? (
+          <EmptyState
+            icon="moon"
+            title="All quiet for now"
+            body="Stores usually post in the hour or two before closing. Pull down to check again."
+          />
+        ) : null
       }
-      renderItem={({ item }) => <DealCard deal={item} onPress={() => navigation.navigate('Deal', { id: item.id })} />}
+      renderItem={({ item }) => <DealCard deal={item} now={now} onPress={() => open(item.id)} />}
     />
   )
 }
 
+function Chip({
+  label,
+  icon,
+  active,
+  onPress,
+}: {
+  label: string
+  icon?: (typeof categoryArt)[Category]['icon']
+  active: boolean
+  onPress: () => void
+}) {
+  const fg = active ? colors.paper : colors.inkSoft
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{ selected: active }}
+      style={[styles.chip, active && styles.chipActive]}
+    >
+      {icon && <MaterialCommunityIcons name={icon} size={15} color={fg} />}
+      <Text style={[styles.chipText, { color: fg }]}>{label}</Text>
+    </Pressable>
+  )
+}
+
 const styles = StyleSheet.create({
-  list: { padding: 16, gap: 12 },
-  tagline: { color: colors.muted, fontSize: 15 },
-  filters: { flexDirection: 'row', gap: 8, flexWrap: 'wrap' },
+  list: { paddingHorizontal: 18, paddingBottom: 28, gap: 12 },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  location: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  headline: { fontFamily: fonts.display, fontSize: 36, lineHeight: 40, color: colors.ink },
+  headlineAccent: { fontFamily: fonts.displayItalic, color: colors.ember },
+  chipScroll: { marginHorizontal: -18 },
+  chips: { flexDirection: 'row', gap: 8, paddingHorizontal: 18 },
   chip: {
-    borderRadius: 999,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: radius.pill,
     paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: '#d6d3d1',
+    paddingVertical: 9,
     backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
-  chipActive: { backgroundColor: colors.text, borderColor: colors.text },
-  card: { flexDirection: 'row', gap: 12 },
-  merchant: { fontSize: 11, letterSpacing: 0.5, color: colors.muted },
-  title: { fontSize: 17, fontWeight: '600', color: colors.text },
-  meta: { fontSize: 14, color: colors.muted, marginTop: 2 },
-  price: { fontSize: 18, fontWeight: '700', color: colors.primaryDark },
-  was: { fontSize: 14, color: '#a8a29e', textDecorationLine: 'line-through' },
-  off: { fontSize: 12, fontWeight: '600', color: colors.primaryDark },
-  empty: { textAlign: 'center', color: colors.muted, marginTop: 40 },
+  chipActive: { backgroundColor: colors.ink, borderColor: colors.ink },
+  chipText: { fontFamily: fonts.bold, fontSize: 13 },
 })
