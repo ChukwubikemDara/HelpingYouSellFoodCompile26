@@ -14,15 +14,16 @@ const FILTERS: { value: Category | ''; label: string }[] = [
 ]
 
 export function DealCard({ deal }: { deal: Deal }) {
+  const soldOut = deal.status === 'sold_out'
   return (
     <Link to={`/deals/${deal.id}`} className="block">
-      <Card className="flex gap-3 hover:border-emerald-500">
+      <Card className={`flex gap-3 hover:border-emerald-500 ${soldOut ? 'opacity-60' : ''}`}>
         {deal.photo_url && <img src={deal.photo_url} alt="" className="h-20 w-20 rounded-lg object-cover" />}
         <div className="min-w-0 flex-1">
           <p className="text-xs tracking-wide text-stone-500 uppercase">{deal.merchant.name}</p>
           <h2 className="truncate font-semibold">{deal.title}</h2>
           <p className="text-sm text-stone-600">
-            Pick up by {clock(deal.pickup_end)} · {deal.quantity_left} left
+            Pick up by {clock(deal.pickup_end)} · {soldOut ? 'Sold out' : `${deal.quantity_left} left`}
           </p>
         </div>
         <div className="text-right">
