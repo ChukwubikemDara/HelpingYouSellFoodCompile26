@@ -1,0 +1,10 @@
+{
+  "name": "helping-you-sell-food-compile26",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix web run dev:full",
+    "dev:frontend": "npm --prefix web run dev",
+    "dev:backend": "npm --prefix web run dev:backend",
+    "build": "npm --prefix web run build"
+  }
+}
