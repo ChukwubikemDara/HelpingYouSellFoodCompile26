@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { DealDetail } from './pages/DealDetail'
 import { DealList } from './pages/DealList'
+import { MyReservations } from './pages/MyReservations'
 import { ReservationPage } from './pages/ReservationPage'
 
 function NotFound() {
@@ -16,6 +17,7 @@ function App() {
           <Route index element={<DealList />} />
           <Route path="deals/:id" element={<DealDetail />} />
           <Route path="reservations/:id" element={<ReservationPage />} />
+          <Route path="my" element={<MyReservations />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
