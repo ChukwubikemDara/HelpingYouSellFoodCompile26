@@ -22,7 +22,7 @@ export class MockError extends Error {
   }
 }
 
-const KEY = 'mock_db_v2' // bump when the seed shape changes
+const KEY = 'mock_db_v3' // bump when the seed shape changes
 
 function hoursFromNow(h: number) {
   return new Date(Date.now() + h * 3600_000).toISOString()
@@ -141,7 +141,32 @@ function seed(): Db {
       note: 'Slow hour special.',
     }),
   ]
-  return { merchants, deals, reservations: [], seq: 10 }
+  // Customers reserve in the mobile app, which has its own mock. Seed a few
+  // here so the portal's redeem box and summary have something to work with.
+  const reservation = (id: string, d: Deal, name: string, code: string, status: Reservation['status']): Reservation => ({
+    id,
+    deal_id: d.id,
+    deal: d,
+    quantity: 1,
+    customer_name: name,
+    customer_phone: '+18145550123',
+    total_cents: d.deal_price_cents ?? 0,
+    payment_method: 'in_store',
+    pickup_code: code,
+    status,
+    created_at: new Date().toISOString(),
+  })
+  const reservations = [
+    reservation('r_1', deals[0], 'Sam', '4821', 'reserved'),
+    reservation('r_2', deals[0], 'Priya', '7350', 'reserved'),
+    reservation('r_3', deals[1], 'Jordan', '1946', 'reserved'),
+    reservation('r_4', deals[1], 'Alex', '2208', 'picked_up'),
+  ]
+  for (const r of reservations) deals.find((d) => d.id === r.deal_id)!.quantity_left -= 1
+  deals[0].quantity_total = 5
+  deals[0].quantity_left = 3
+  deals[1].quantity_left = 1
+  return { merchants, deals, reservations, seq: 10 }
 }
 
 function load(): Db {
