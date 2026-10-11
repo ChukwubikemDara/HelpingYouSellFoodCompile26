@@ -1,5 +1,30 @@
 @import "tailwindcss";
 
+/* Same palette and type as the mobile app (mobile/src/theme.ts). */
+@theme {
+  --color-paper: #faf5ec;
+  --color-card: #ffffff;
+  --color-ink: #1e1a16;
+  --color-ink-soft: #4a4038;
+  --color-muted: #6f6358;
+  --color-line: #ebe1d2;
+  --color-ember: #c8401f;
+  --color-ember-soft: #fbe4da;
+  --color-marigold: #f2b33d;
+  --color-marigold-soft: #fbebc6;
+  --color-forest: #1f4b3a;
+  --color-forest-soft: #dcebdd;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-sans: "DM Sans", system-ui, sans-serif;
+  --font-mono: "DM Mono", ui-monospace, monospace;
+}
+
 body {
-  @apply bg-stone-50 text-stone-900 antialiased;
+  @apply bg-paper font-sans text-ink antialiased;
+}
+
+.font-display {
+  font-weight: 600;
+  letter-spacing: -0.01em;
 }
