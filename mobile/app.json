@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
+    "name": "Last Call",
+    "slug": "last-call",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
