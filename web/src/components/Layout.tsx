@@ -1,8 +1,5 @@
 import { useEffect } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router-dom'
-
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `px-2 py-1 text-sm ${isActive ? 'font-semibold text-emerald-700' : 'text-stone-600 hover:text-stone-900'}`
+import { Link, Outlet, useLocation } from 'react-router-dom'
 
 export function Layout() {
   // BrowserRouter keeps the old scroll position; start each screen at the top
@@ -13,23 +10,13 @@ export function Layout() {
 
   return (
     <div className="mx-auto min-h-screen max-w-md">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-stone-200 bg-stone-50/95 px-4 py-3 backdrop-blur">
-        <NavLink to="/" className="text-lg font-bold">
-          Last Call
-        </NavLink>
-        <nav className="flex gap-1">
-          <NavLink to="/" end className={linkClass}>
-            Deals
-          </NavLink>
-          <NavLink to="/my" className={linkClass}>
-            My pickups
-          </NavLink>
-          <NavLink to="/merchant" className={linkClass}>
-            Business
-          </NavLink>
-        </nav>
+      <header className="flex items-baseline justify-between px-5 pt-5">
+        <Link to="/merchant" className="font-display text-xl italic">
+          Last Call<span className="text-marigold">.</span>
+        </Link>
+        <span className="text-[11px] font-bold tracking-[0.1em] text-muted uppercase">For stores</span>
       </header>
-      <main className="space-y-4 p-4 pb-16">
+      <main className="space-y-5 px-5 pt-5 pb-28">
         <Outlet />
       </main>
     </div>

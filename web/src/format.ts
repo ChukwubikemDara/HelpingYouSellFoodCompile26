@@ -8,11 +8,19 @@ export function percentOff(original: number | null, deal: number | null) {
 }
 
 export function clock(iso: string) {
-  return new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
 }
 
 export function pickupWindow(start: string, end: string) {
   return `${clock(start)} – ${clock(end)}`
+}
+
+// "18:00" -> "6:00 PM"
+export function clockFromHHMM(hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number)
+  const d = new Date()
+  d.setHours(h, m, 0, 0)
+  return clock(d.toISOString())
 }
 
 // local YYYY-MM-DD, for the ?date= params
