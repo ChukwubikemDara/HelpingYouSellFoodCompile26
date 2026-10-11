@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { api } from '../../api'
-import { Card, ErrorNote, Input, Loading } from '../../components/ui'
+import { Card, ErrorNote, Eyebrow, Input, Loading } from '../../components/ui'
 import { money, today } from '../../format'
 import { useLoad } from '../../hooks'
 import { useMerchant } from './useMerchant'
@@ -8,8 +8,8 @@ import { useMerchant } from './useMerchant'
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
     <Card>
-      <p className="text-sm text-stone-500">{label}</p>
-      <p className="text-2xl font-bold">{value}</p>
+      <p className="font-display text-3xl">{value}</p>
+      <p className="text-xs font-bold text-muted">{label}</p>
     </Card>
   )
 }
@@ -23,7 +23,7 @@ export function SummaryPage() {
   return (
     <>
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Summary</h1>
+        <h1 className="font-display text-3xl">Summary</h1>
         <Input
           type="date"
           value={date}
@@ -39,17 +39,17 @@ export function SummaryPage() {
 
       {s && (
         <>
-          <Card className="bg-emerald-50">
-            <p className="text-sm text-emerald-900">Recovered from food that would have been unsold</p>
-            <p className="text-4xl font-bold text-emerald-800">{money(s.recovered_cents)}</p>
-            <p className="text-sm text-emerald-900">versus {money(s.if_discarded_cents)} if it had been discarded</p>
-          </Card>
+          <div className="rounded-3xl bg-ink p-5 text-paper">
+            <Eyebrow className="text-marigold!">Recovered from food you would have tossed</Eyebrow>
+            <p className="mt-2 font-display text-5xl">{money(s.recovered_cents)}</p>
+            <p className="mt-1 text-sm text-[#CFC4B5]">versus {money(s.if_discarded_cents)} if it had been discarded</p>
+          </div>
           <div className="grid grid-cols-3 gap-3">
             <Stat label="Listed" value={s.units_listed} />
             <Stat label="Picked up" value={s.units_picked_up} />
             <Stat label="Unsold" value={s.units_unsold} />
           </div>
-          <p className="text-sm text-stone-600">
+          <p className="text-sm text-muted">
             Platform fee: {money(s.platform_fee_cents)}. Charged only on picked-up reservations.
           </p>
         </>
@@ -58,11 +58,11 @@ export function SummaryPage() {
       {links.data && (
         <p className="text-sm">
           {merchant.plan_status === 'active' ? (
-            <a href={links.data.portal_url} target="_blank" rel="noreferrer" className="text-emerald-700 underline">
+            <a href={links.data.portal_url} target="_blank" rel="noreferrer" className="text-ember underline">
               Manage billing
             </a>
           ) : (
-            <a href={links.data.pricing_url} target="_blank" rel="noreferrer" className="text-emerald-700 underline">
+            <a href={links.data.pricing_url} target="_blank" rel="noreferrer" className="text-ember underline">
               Choose a plan
             </a>
           )}
