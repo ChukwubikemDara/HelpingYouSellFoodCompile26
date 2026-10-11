@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { api } from '../api'
 import { Button, Card, ErrorNote, Loading, StatusBadge } from '../components/ui'
-import { money, pickupWindow } from '../format'
-import { useLoad } from '../hooks'
+import { clock, money, pickupWindow } from '../format'
+import { useLoad, useNow } from '../hooks'
 import type { Reservation } from '../types'
 
 const HEADLINES: Record<Reservation['status'], string> = {
@@ -18,6 +18,7 @@ export function ReservationPage() {
   // poll so the screen flips to "picked up" when the shop redeems the code
   const { data: r, error, loading, setData } = useLoad(() => api.reservation(id), id, 10_000)
   const [busy, setBusy] = useState(false)
+  const now = useNow()
   const [actionError, setActionError] = useState('')
 
   async function act(fn: (id: string) => Promise<Reservation>) {
@@ -36,11 +37,14 @@ export function ReservationPage() {
   if (!r) return <ErrorNote>{error?.message ?? 'Reservation not found'}</ErrorNote>
 
   const open = r.status === 'reserved'
+  const beforeWindow = now < Date.parse(r.deal.pickup_start)
+  const windowOver = now > Date.parse(r.deal.pickup_end)
+  const shopCancelled = r.status === 'cancelled' && r.deal.status === 'cancelled'
 
   return (
     <>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{HEADLINES[r.status]}</h1>
+        <h1 className="text-2xl font-bold">{shopCancelled ? 'The store cancelled this deal' : HEADLINES[r.status]}</h1>
         <StatusBadge status={r.status} />
       </div>
 
@@ -66,23 +70,42 @@ export function ReservationPage() {
         </p>
       </Card>
 
+      {r.status === 'no_show' && (
+        <p className="text-sm text-stone-600">Two missed pickups block this phone from reserving again.</p>
+      )}
+
       <ErrorNote>{actionError}</ErrorNote>
 
       {open && (
         <div className="space-y-2">
-          <Button className="w-full" disabled={busy} onClick={() => act(api.confirmPickup)}>
+          <Button
+            className="w-full"
+            disabled={busy || beforeWindow || windowOver}
+            onClick={() => act(api.confirmPickup)}
+          >
             I picked it up
           </Button>
-          <Button
-            variant="danger"
-            className="w-full"
-            disabled={busy}
-            onClick={() => {
-              if (window.confirm('Cancel this reservation?')) void act(api.cancelReservation)
-            }}
-          >
-            Cancel reservation
-          </Button>
+          {beforeWindow && (
+            <p className="text-center text-xs text-stone-500">
+              You can confirm once pickup opens at {clock(r.deal.pickup_start)}.
+            </p>
+          )}
+          {windowOver ? (
+            <p className="text-center text-sm text-stone-600">
+              The pickup window has ended. If you collected it, the store can still enter your code.
+            </p>
+          ) : (
+            <Button
+              variant="danger"
+              className="w-full"
+              disabled={busy}
+              onClick={() => {
+                if (window.confirm('Cancel this reservation?')) void act(api.cancelReservation)
+              }}
+            >
+              Cancel reservation
+            </Button>
+          )}
         </div>
       )}
 

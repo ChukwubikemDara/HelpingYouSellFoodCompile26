@@ -40,3 +40,13 @@ export function useLoad<T>(fn: () => Promise<T>, key: string, pollMs?: number) {
 
   return { data: current?.data, error: current?.error, loading: !current, reload, setData }
 }
+
+// Current time that ticks, for UI that depends on a pickup window opening or closing.
+export function useNow(everyMs = 15_000) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), everyMs)
+    return () => clearInterval(t)
+  }, [everyMs])
+  return now
+}
