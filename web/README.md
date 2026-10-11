@@ -1,32 +1,37 @@
-# React + TypeScript + Vite
+# web
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Frontend for the surplus food deals app (consumer + merchant), built against API contract v0.1.
 
-Currently, two official plugins are available:
+## Run it
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Open http://localhost:5173. Use a phone-sized window, the layout is mobile first.
+
+## Mock backend
+
+`npm run dev` serves fixtures from `src/mock.ts` instead of calling the API
+(`VITE_API_MOCK=1` in `.env.development`). Data lives in localStorage, so it
+survives reloads. To start fresh, run this in the browser console:
+
+```js
+localStorage.removeItem('mock_db')
+```
+
+Mock merchants you can open from the Business tab: `m_1` (bakery), `m_2` (cafe),
+`m_3` (restaurant, no plan, so publishing shows the "choose a plan" path).
+
+## Real backend
+
+Set `VITE_API_MOCK=0`. In dev, `/api` is proxied to `http://localhost:8000`
+(change it in `vite.config.ts`). For a deployed build set `VITE_API_URL` to the
+backend origin.
+
+## Layout
+
+- `src/types.ts` contract shapes
+- `src/api.ts` one function per endpoint
+- `src/pages` consumer screens, `src/pages/merchant` merchant screens
