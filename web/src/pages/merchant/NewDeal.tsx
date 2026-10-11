@@ -67,7 +67,7 @@ export function NewDeal() {
 
   return (
     <form onSubmit={submit} className="space-y-3">
-      <h1 className="text-2xl font-bold">What's left today?</h1>
+      <h1 className="font-display text-3xl">What's left today?</h1>
       <Field label="Tell us in your own words" hint="We'll draft one listing per product for you to check.">
         <textarea
           value={text}
@@ -78,11 +78,17 @@ export function NewDeal() {
         />
       </Field>
       <Field label="Or snap a photo of the case">
-        <input type="file" accept="image/*" capture="environment" onChange={pickPhoto} className="text-sm" />
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={pickPhoto}
+          className="w-full text-sm text-muted file:mr-3 file:rounded-full file:border-0 file:bg-ink file:px-4 file:py-2 file:text-sm file:font-bold file:text-paper"
+        />
       </Field>
       <ErrorNote>{error}</ErrorNote>
       {unreadable && (
-        <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <p className="rounded-2xl border border-marigold bg-marigold-soft px-3 py-2 text-sm text-ink">
           We couldn't work out a listing from that. Try rewording it, or fill in the form yourself.
         </p>
       )}
@@ -92,7 +98,7 @@ export function NewDeal() {
       <Button type="button" variant="secondary" disabled={!!busy} onClick={manual} className="w-full">
         {busy === 'manual' ? 'Opening form…' : 'Fill in the form myself'}
       </Button>
-      <p className="text-center text-xs text-stone-500">Nothing goes live until you approve it.</p>
+      <p className="text-center text-xs text-muted">Nothing goes live until you approve it.</p>
     </form>
   )
 }

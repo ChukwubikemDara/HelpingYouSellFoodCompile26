@@ -84,7 +84,7 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }))
   // highlight what the assistant couldn't fill, until the merchant fills it
   const flag = (field: string, empty: boolean) =>
-    extras?.missing_fields.includes(field) && empty ? 'border-amber-400! bg-amber-50!' : ''
+    extras?.missing_fields.includes(field) && empty ? 'border-marigold! bg-marigold-soft!' : ''
   const problems = validate(form, deal)
 
   function toggleAllergen(a: string) {
@@ -138,24 +138,24 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{isDraft ? 'Check your listing' : 'Edit live deal'}</h1>
+        <h1 className="font-display text-3xl">{isDraft ? 'Check your listing' : 'Edit live deal'}</h1>
         <StatusBadge status={deal.status} />
       </div>
 
       {position >= 0 && queue.length > 1 && (
-        <p className="text-sm text-stone-600">
+        <p className="text-sm text-muted">
           Draft {position + 1} of {queue.length}
         </p>
       )}
 
       {isDraft && extras && (
-        <Card className="space-y-1 bg-amber-50 text-sm">
+        <Card className="space-y-1 bg-marigold-soft text-sm">
           <p>{extras.agent_notes}</p>
-          <p className="text-stone-700">
+          <p className="text-ink-soft">
             Estimate: about <strong>{money(extras.estimate.expected_recovered_cents)}</strong> recovered from{' '}
             {extras.estimate.units} units, versus {money(extras.estimate.if_discarded_cents)} if discarded.
           </p>
-          <p className="text-xs text-stone-500">
+          <p className="text-xs text-muted">
             Assumes {Math.round(extras.estimate.assumed_sell_through * 100)}% sell. That is an assumption, not a
             forecast.
           </p>
@@ -163,7 +163,7 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
       )}
 
       {locked && (
-        <p className="rounded-lg bg-stone-100 px-3 py-2 text-sm text-stone-600">
+        <p className="rounded-2xl bg-line/60 px-3 py-2 text-sm text-muted">
           This deal is live, so price and items are locked. You can change quantity, pickup end time and the note.
         </p>
       )}
@@ -173,7 +173,7 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
       </Field>
 
       <div>
-        <span className="mb-1 block text-sm font-medium text-stone-700">What one unit contains</span>
+        <span className="mb-1 block text-sm font-medium text-ink-soft">What one unit contains</span>
         <div className="space-y-2">
           {form.items.map((item, i) => (
             <div key={i} className="flex gap-2">
@@ -201,7 +201,7 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
                       form.items.filter((_, j) => j !== i),
                     )
                   }
-                  className="px-2 text-stone-500"
+                  className="px-2 text-muted"
                   aria-label="Remove item"
                 >
                   ✕
@@ -213,7 +213,7 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
             <button
               type="button"
               onClick={() => set('items', [...form.items, { name: '', qty: 1 }])}
-              className="text-sm font-medium text-emerald-700"
+              className="text-sm font-medium text-ember"
             >
               + Add item
             </button>
@@ -279,14 +279,14 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
       )}
 
       <div
-        className={`rounded-xl border p-3 ${
-          form.allergens === null ? 'border-amber-400 bg-amber-50' : 'border-stone-200 bg-white'
+        className={`rounded-3xl border p-3 ${
+          form.allergens === null ? 'border-marigold bg-marigold-soft' : 'border-line bg-white'
         }`}
       >
-        <p className="text-sm font-medium text-stone-700">
-          Allergens {form.allergens === null && <span className="text-amber-700">· needs your answer</span>}
+        <p className="text-sm font-medium text-ink-soft">
+          Allergens {form.allergens === null && <span className="text-ember">· needs your answer</span>}
         </p>
-        {isDraft && <p className="mb-2 text-xs text-stone-500">Only you can confirm this. Required before publishing.</p>}
+        {isDraft && <p className="mb-2 text-xs text-muted">Only you can confirm this. Required before publishing.</p>}
         <div className="mt-2 flex flex-wrap gap-2">
           {COMMON_ALLERGENS.map((a) => (
             <button
@@ -295,7 +295,7 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
               disabled={locked}
               onClick={() => toggleAllergen(a)}
               className={`rounded-full px-3 py-1 text-sm ${
-                form.allergens?.includes(a) ? 'bg-stone-900 text-white' : 'border border-stone-300 bg-white'
+                form.allergens?.includes(a) ? 'bg-ink text-white' : 'border border-line bg-white'
               }`}
             >
               {a}
@@ -306,7 +306,7 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
             disabled={locked}
             onClick={() => set('allergens', [])}
             className={`rounded-full px-3 py-1 text-sm ${
-              form.allergens?.length === 0 ? 'bg-emerald-600 text-white' : 'border border-stone-300 bg-white'
+              form.allergens?.length === 0 ? 'bg-ember text-white' : 'border border-line bg-white'
             }`}
           >
             None
@@ -319,7 +319,7 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
       </Field>
 
       {problems.length > 0 && (
-        <ul className="list-disc pl-5 text-sm text-amber-800">
+        <ul className="list-disc pl-5 text-sm text-ember">
           {problems.map((p) => (
             <li key={p}>{p}</li>
           ))}
@@ -334,7 +334,7 @@ function Editor({ deal, extras }: { deal: Deal; extras: Draft | undefined }) {
               href={billing.data.pricing_url}
               target="_blank"
               rel="noreferrer"
-              className="font-medium text-emerald-700 underline"
+              className="font-medium text-ember underline"
             >
               Choose a plan
             </a>

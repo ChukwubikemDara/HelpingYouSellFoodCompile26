@@ -70,8 +70,8 @@ export function Onboard() {
   return (
     <>
       <div>
-        <h1 className="text-2xl font-bold">List your surplus</h1>
-        <p className="text-stone-600">Tell us about your store. Takes a couple of minutes.</p>
+        <h1 className="font-display text-3xl">List your surplus</h1>
+        <p className="text-muted">Tell us about your store. Takes a couple of minutes.</p>
       </div>
 
       <form onSubmit={submit} className="space-y-3">
@@ -106,8 +106,8 @@ export function Onboard() {
         </div>
 
         <div>
-          <span className="block text-sm font-medium text-stone-700">Your regular items</span>
-          <span className="mb-2 block text-xs text-stone-500">
+          <span className="block text-sm font-medium text-ink-soft">Your regular items</span>
+          <span className="mb-2 block text-xs text-muted">
             About five things you sell most, with regular prices. We use these to price your listings.
           </span>
           <div className="space-y-2">
@@ -133,7 +133,7 @@ export function Onboard() {
           <button
             type="button"
             onClick={() => setMenu((rows) => [...rows, { name: '', price: '' }])}
-            className="mt-2 text-sm font-medium text-emerald-700"
+            className="mt-2 text-sm font-medium text-ember"
           >
             + Add another
           </button>
@@ -145,7 +145,7 @@ export function Onboard() {
         </Button>
       </form>
 
-      <form onSubmit={useExisting} className="flex items-end gap-2 border-t border-stone-200 pt-4">
+      <form onSubmit={useExisting} className="flex items-end gap-2 border-t border-line pt-4">
         <div className="flex-1">
           <Field label="Already set up? Enter your merchant ID">
             <Input value={existingId} onChange={(e) => setExistingId(e.target.value)} placeholder="m_1" />
