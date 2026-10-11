@@ -26,24 +26,6 @@ export const storage = {
       // nothing to clear
     }
   },
-
-  customer: () => ({ name: get('customer_name') ?? '', phone: get('customer_phone') ?? '' }),
-  setCustomer: (name: string, phone: string) => {
-    set('customer_name', name)
-    set('customer_phone', phone)
-  },
-
-  reservationIds: (): string[] => {
-    try {
-      return JSON.parse(get('reservation_ids') ?? '[]')
-    } catch {
-      return []
-    }
-  },
-  addReservationId: (id: string) => {
-    const ids = storage.reservationIds()
-    if (!ids.includes(id)) set('reservation_ids', JSON.stringify([id, ...ids]))
-  },
 }
 
 // "(814) 555-0123" -> "+18145550123". Returns null if it isn't a 10 digit US number.
