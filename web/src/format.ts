@@ -1,8 +1,9 @@
-export function money(cents: number) {
-  return `$${(cents / 100).toFixed(2)}`
+export function money(cents: number | null) {
+  return cents === null ? '—' : `$${(cents / 100).toFixed(2)}`
 }
 
-export function percentOff(original: number, deal: number) {
+export function percentOff(original: number | null, deal: number | null) {
+  if (!original || deal === null) return 0
   return Math.round((1 - deal / original) * 100)
 }
 

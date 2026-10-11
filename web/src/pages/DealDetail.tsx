@@ -75,7 +75,7 @@ function ReserveForm({ deal, onStale }: { deal: Deal; onStale: () => void }) {
       </Field>
       <ErrorNote>{error}</ErrorNote>
       <Button type="submit" disabled={busy} className="w-full">
-        {busy ? 'Reserving…' : `Reserve · ${money(quantity * deal.deal_price_cents)}`}
+        {busy ? 'Reserving…' : `Reserve · ${money(quantity * (deal.deal_price_cents ?? 0))}`}
       </Button>
       <p className="text-center text-xs text-stone-500">Pay at the shop when you pick up.</p>
     </form>

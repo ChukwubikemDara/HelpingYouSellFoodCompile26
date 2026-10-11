@@ -22,7 +22,7 @@ export class MockError extends Error {
   }
 }
 
-const KEY = 'mock_db'
+const KEY = 'mock_db_v2' // bump when the seed shape changes
 
 function hoursFromNow(h: number) {
   return new Date(Date.now() + h * 3600_000).toISOString()
@@ -40,6 +40,14 @@ function seed(): Db {
       phone: '+18145550100',
       closes_at: '18:00',
       plan_status: 'active',
+      default_discount_pct: 50,
+      menu_items: [
+        { name: 'Croissant', price_cents: 400 },
+        { name: 'Baguette', price_cents: 450 },
+        { name: 'Blueberry muffin', price_cents: 350 },
+        { name: 'Sourdough loaf', price_cents: 800 },
+        { name: 'Cinnamon roll', price_cents: 425 },
+      ],
     },
     {
       id: 'm_2',
@@ -51,6 +59,13 @@ function seed(): Db {
       phone: '+18145550101',
       closes_at: '20:00',
       plan_status: 'active',
+      default_discount_pct: 40,
+      menu_items: [
+        { name: 'Bagel', price_cents: 250 },
+        { name: 'Scone', price_cents: 375 },
+        { name: 'Muffin', price_cents: 350 },
+        { name: 'Cookie', price_cents: 275 },
+      ],
     },
     {
       id: 'm_3',
@@ -192,8 +207,7 @@ function newPickupCode(db: Db, merchantId: string) {
   }
 }
 
-function draftFromText(db: Db, merchant: Merchant, text: string): Draft {
-  const units = Number(text.match(/\d+/)?.[0] ?? 3)
+function blankDraft(db: Db, merchant: Merchant): Deal {
   const closes = new Date()
   const [h, m] = merchant.closes_at.split(':').map(Number)
   closes.setHours(h, m, 0, 0)
@@ -209,16 +223,17 @@ function draftFromText(db: Db, merchant: Merchant, text: string): Draft {
       lat: merchant.lat,
       lng: merchant.lng,
     },
-    title: text.trim().slice(0, 40) || 'Surprise bag',
-    items: [{ name: text.trim().slice(0, 40) || 'Assorted items', qty: 1 }],
-    original_price_cents: 800,
-    deal_price_cents: 400,
+    title: '',
+    items: [],
+    original_price_cents: null,
+    deal_price_cents: null,
     kind: 'surplus',
-    quantity_total: units,
-    quantity_left: units,
+    quantity_total: 1,
+    quantity_left: 1,
     max_per_customer: 2,
     unsold_action: 'none',
-    pickup_start: new Date(closes.getTime() - 3600_000).toISOString(),
+    // now until closing, unless the merchant says otherwise
+    pickup_start: new Date().toISOString(),
     pickup_end: closes.toISOString(),
     allergens: null,
     note: null,
@@ -227,19 +242,48 @@ function draftFromText(db: Db, merchant: Merchant, text: string): Draft {
     created_at: new Date().toISOString(),
   }
   db.deals.push(deal)
-  return {
-    deal,
-    missing_fields: ['allergens'],
-    agent_notes: 'Mock draft: price is a placeholder, pickup ends at your closing time.',
-    estimate: {
-      units,
-      deal_price_cents: deal.deal_price_cents,
-      assumed_sell_through: 0.6,
-      expected_recovered_cents: Math.round(units * deal.deal_price_cents * 0.6),
-      if_discarded_cents: 0,
-    },
-  }
+  return deal
 }
+
+// Crude stand-in for the listing assistant: one draft per "N things" in the text.
+// Follows the same never-rules: no invented prices, no invented allergens.
+function draftsFromText(db: Db, merchant: Merchant, text: string): Draft[] {
+  const products = [...text.matchAll(/(\d+)\s+([a-z][a-z' -]*?)(?=\s*(?:,|\.|;|\band\b|\bclosing\b|\bfor\b|\bat\b|$))/gi)]
+  return products.map(([, count, rawName]) => {
+    const name = rawName.trim()
+    const units = Number(count)
+    const singular = name.toLowerCase().replace(/s$/, '')
+    const onMenu = merchant.menu_items?.find((i) => i.name.toLowerCase().includes(singular))
+    const deal = blankDraft(db, merchant)
+    deal.title = name.charAt(0).toUpperCase() + name.slice(1)
+    deal.items = [{ name: onMenu?.name ?? deal.title, qty: 1 }]
+    deal.quantity_total = deal.quantity_left = units
+    const missing = ['allergens']
+    if (onMenu) {
+      deal.original_price_cents = onMenu.price_cents
+      deal.deal_price_cents = Math.round((onMenu.price_cents * (100 - (merchant.default_discount_pct ?? 50))) / 100)
+    } else {
+      missing.push('original_price_cents', 'deal_price_cents')
+    }
+    return {
+      deal,
+      missing_fields: missing,
+      agent_notes: onMenu
+        ? `Regular price from your menu (${onMenu.name}), less your default discount.`
+        : 'Not on your menu and no price given, so the price is left for you to fill in.',
+      estimate: {
+        units,
+        deal_price_cents: deal.deal_price_cents,
+        assumed_sell_through: 0.6,
+        expected_recovered_cents: Math.round(units * (deal.deal_price_cents ?? 0) * 0.6),
+        if_discarded_cents: 0,
+      },
+    }
+  })
+}
+
+// Once a deal is live the price and items are locked.
+const EDITABLE_LIVE: (keyof Deal)[] = ['quantity_total', 'pickup_end', 'note']
 
 const EDITABLE: (keyof Deal)[] = [
   'title',
@@ -264,7 +308,7 @@ function route(db: Db, method: string, url: URL, body: any, merchantId: string |
   if (method === 'GET' && path === '/deals') {
     const category = q.get('category')
     const deals = db.deals
-      .filter((d) => d.status === 'live' && (!category || d.merchant.category === category))
+      .filter((d) => (d.status === 'live' || d.status === 'sold_out') && (!category || d.merchant.category === category))
       .sort((a, b) => Date.parse(a.pickup_end) - Date.parse(b.pickup_end))
     return { deals }
   }
@@ -308,7 +352,7 @@ function route(db: Db, method: string, url: URL, body: any, merchantId: string |
       quantity: body.quantity,
       customer_name: body.customer_name.trim(),
       customer_phone: body.customer_phone,
-      total_cents: body.quantity * deal.deal_price_cents,
+      total_cents: body.quantity * (deal.deal_price_cents ?? 0),
       payment_method: 'in_store',
       pickup_code: newPickupCode(db, deal.merchant_id),
       status: 'reserved',
@@ -334,6 +378,10 @@ function route(db: Db, method: string, url: URL, body: any, merchantId: string |
       if (deal.status === 'sold_out') deal.status = 'live'
     } else if (method === 'POST' && m[2] === '/confirm-pickup') {
       if (r.status !== 'reserved') invalid('This reservation is not open')
+      const now = Date.now()
+      if (now < Date.parse(deal.pickup_start) || now > Date.parse(deal.pickup_end)) {
+        invalid('Pickup can only be confirmed during the pickup window')
+      }
       r.status = 'picked_up'
     }
     return withDeal(db, r)
@@ -357,6 +405,8 @@ function route(db: Db, method: string, url: URL, body: any, merchantId: string |
       phone: body.phone,
       closes_at: body.closes_at,
       plan_status: 'active',
+      default_discount_pct: body.default_discount_pct,
+      menu_items: body.menu_items ?? [],
     }
     db.merchants.push(merchant)
     return merchant
@@ -372,8 +422,10 @@ function route(db: Db, method: string, url: URL, body: any, merchantId: string |
     if (!m[2]) return merchant
     if (m[2] === '/drafts') {
       if (!body.text && !body.photo_base64) invalid('Send text or a photo')
-      return draftFromText(db, merchant, body.text ?? 'Surprise bag')
+      // a photo alone can't be read by the mock: no drafts, so the portal shows the manual form
+      return { drafts: draftsFromText(db, merchant, body.text ?? '') }
     }
+    if (m[2] === '/deals' && method === 'POST') return blankDraft(db, merchant)
     if (m[2] === '/deals') return { deals }
     if (m[2] === '/reservations') return { reservations }
     const listed = deals.filter((d) => d.status !== 'draft' && d.status !== 'cancelled')
@@ -395,13 +447,21 @@ function route(db: Db, method: string, url: URL, body: any, merchantId: string |
     const deal = db.deals.find((d) => d.id === m![1]) ?? notFound('Deal')
     if (method === 'GET') return deal
     if (method === 'PATCH') {
-      Object.assign(deal, Object.fromEntries(EDITABLE.filter((k) => k in body).map((k) => [k, body[k]])))
-      if (deal.status === 'draft') deal.quantity_left = deal.quantity_total
+      if (deal.status !== 'draft' && deal.status !== 'live' && deal.status !== 'sold_out') {
+        invalid('This deal can no longer be edited')
+      }
+      const allowed = deal.status === 'draft' ? EDITABLE : EDITABLE_LIVE
+      const sold = deal.quantity_total - deal.quantity_left
+      Object.assign(deal, Object.fromEntries(allowed.filter((k) => k in body).map((k) => [k, body[k]])))
+      if (deal.quantity_total < sold) invalid(`${sold} already reserved, quantity can't go below that`)
+      deal.quantity_left = deal.quantity_total - sold
+      if (deal.status !== 'draft') deal.status = deal.quantity_left === 0 ? 'sold_out' : 'live'
       return deal
     }
     if (m[2] === '/publish') {
       if (deal.status !== 'draft') invalid('Only drafts can be published')
       if (deal.allergens === null) invalid('Allergens must be answered before publishing')
+      if (deal.deal_price_cents === null || deal.original_price_cents === null) invalid('Both prices are required')
       if (deal.deal_price_cents >= deal.original_price_cents) invalid('Deal price must be below the original price')
       if (deal.quantity_total < 1) invalid('Quantity must be at least 1')
       if (Date.parse(deal.pickup_end) <= Date.now()) invalid('Pickup must end in the future')

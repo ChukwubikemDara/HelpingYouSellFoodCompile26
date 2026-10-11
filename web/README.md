@@ -18,7 +18,7 @@ Open http://localhost:5173. Use a phone-sized window, the layout is mobile first
 survives reloads. To start fresh, run this in the browser console:
 
 ```js
-localStorage.removeItem('mock_db')
+localStorage.removeItem('mock_db_v2')
 ```
 
 Mock merchants you can open from the Business tab: `m_1` (bakery), `m_2` (cafe),

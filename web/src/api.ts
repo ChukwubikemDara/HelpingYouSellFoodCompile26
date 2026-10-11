@@ -51,7 +51,16 @@ function query(params: Record<string, string | number | undefined>) {
 }
 
 export type NewReservation = Pick<Reservation, 'deal_id' | 'quantity' | 'customer_name' | 'customer_phone'>
-export type NewMerchant = Pick<Merchant, 'name' | 'category' | 'address' | 'phone' | 'closes_at'>
+export type NewMerchant = Pick<Merchant, 'name' | 'category' | 'address' | 'phone' | 'closes_at'> &
+  Pick<Merchant, 'default_discount_pct' | 'menu_items'>
+
+// The contract returns a single Draft; the feature spec says one draft per product.
+// Accept either so the UI works whichever the backend ships.
+function toDrafts(res: Draft | Draft[] | { drafts: Draft[] }): Draft[] {
+  if (Array.isArray(res)) return res
+  if ('drafts' in res) return res.drafts
+  return [res]
+}
 
 export const api = {
   // consumer
@@ -70,8 +79,10 @@ export const api = {
   // merchant
   createMerchant: (body: NewMerchant) => req<Merchant>('POST', '/merchants', body),
   merchant: (id: string) => req<Merchant>('GET', `/merchants/${id}`),
-  createDraft: (merchantId: string, body: { text?: string; photo_base64?: string }) =>
-    req<Draft>('POST', `/merchants/${merchantId}/drafts`, body),
+  createDrafts: (merchantId: string, body: { text?: string; photo_base64?: string }) =>
+    req<Draft | Draft[] | { drafts: Draft[] }>('POST', `/merchants/${merchantId}/drafts`, body).then(toDrafts),
+  // Manual listing: a blank draft with no assistant. Endpoint is NOT in contract v0.1, confirm with backend.
+  createBlankDraft: (merchantId: string) => req<Deal>('POST', `/merchants/${merchantId}/deals`, {}),
   updateDeal: (id: string, body: Partial<Deal>) => req<Deal>('PATCH', `/deals/${id}`, body),
   publishDeal: (id: string) => req<Deal>('POST', `/deals/${id}/publish`),
   cancelDeal: (id: string) => req<Deal>('POST', `/deals/${id}/cancel`),

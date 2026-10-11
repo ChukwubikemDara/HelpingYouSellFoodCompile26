@@ -14,6 +14,15 @@ export interface Merchant {
   phone: string
   closes_at: string // "18:00", local time
   plan_status: 'none' | 'active'
+  // Onboarding extras from the feature spec. Not in contract v0.1 yet, so optional
+  // and the names are our proposal until the backend confirms them.
+  default_discount_pct?: number
+  menu_items?: MenuItem[]
+}
+
+export interface MenuItem {
+  name: string
+  price_cents: number
 }
 
 export type MerchantSummary = Pick<Merchant, 'id' | 'name' | 'category' | 'address' | 'lat' | 'lng'>
@@ -29,8 +38,9 @@ export interface Deal {
   merchant: MerchantSummary
   title: string
   items: DealItem[] // contents of ONE unit
-  original_price_cents: number
-  deal_price_cents: number
+  // null only on drafts: the assistant leaves a price empty rather than guess one
+  original_price_cents: number | null
+  deal_price_cents: number | null
   kind: 'surplus' | 'timed'
   quantity_total: number
   quantity_left: number
@@ -51,7 +61,7 @@ export interface Draft {
   agent_notes: string
   estimate: {
     units: number
-    deal_price_cents: number
+    deal_price_cents: number | null
     assumed_sell_through: number // an assumption, label it as such
     expected_recovered_cents: number
     if_discarded_cents: number

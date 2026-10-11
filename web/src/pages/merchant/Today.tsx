@@ -99,7 +99,7 @@ function DealRow({ deal, onChange }: { deal: Deal; onChange: () => void }) {
       </div>
       <ErrorNote>{error}</ErrorNote>
       <div className="flex gap-3 text-sm">
-        {(deal.status === 'draft' || deal.status === 'live') && (
+        {(deal.status === 'draft' || deal.status === 'live' || deal.status === 'sold_out') && (
           <Link to={`/merchant/deals/${deal.id}`} className="font-medium text-emerald-700">
             {deal.status === 'draft' ? 'Review & publish' : 'Edit'}
           </Link>
