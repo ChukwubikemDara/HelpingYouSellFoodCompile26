@@ -1,9 +1,21 @@
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { Layout } from './components/Layout'
+import { DealList } from './pages/DealList'
+
+function NotFound() {
+  return <p className="py-10 text-center text-stone-500">Page not found.</p>
+}
+
 function App() {
   return (
-    <main className="mx-auto max-w-md p-4">
-      <h1 className="text-2xl font-bold">Last Call</h1>
-      <p className="text-stone-600">End-of-day food deals in State College.</p>
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route index element={<DealList />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }
 
