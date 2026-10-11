@@ -1,0 +1,1 @@
+ListingAssistant is a typed boundary for the teammate-owned Luminal integration. It uses v0.6 Merchant and Draft objects. The future route validates input and persists one draft per product; generated drafts never publish automatically. No AI engine or fake success endpoint is provided.

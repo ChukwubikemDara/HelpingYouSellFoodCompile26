@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.env*
+!.env.example
+*.tsbuildinfo
+.pnpm-store/
+.local/
+web/dist/
+mobile/dist/
+backend/public/
+.expo/
+dynamodb-local-metadata.json
