@@ -1,3 +1,4 @@
+import { createServer } from 'node:net';
 import { spawn } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -14,7 +15,15 @@ function run(command, args, cwd = root, env = process.env) {
 }
 function stop() { for (const child of children) child.kill('SIGTERM'); }
 process.on('SIGINT', () => { stop(); process.exit(0); }); process.on('SIGTERM', () => { stop(); process.exit(0); });
+async function requireFreePort(port) {
+  await new Promise((resolve, reject) => {
+    const probe = createServer();
+    probe.once('error', () => reject(new Error(`Port ${port} is already in use. Stop the existing local app with Ctrl+C before running run-local.sh again.`)));
+    probe.listen(port, '0.0.0.0', () => probe.close(resolve));
+  });
+}
 try {
+  await requireFreePort(3000); await requireFreePort(8126);
   await run('java', ['-version']);
   for (const folder of ['backend', 'web']) await run('pnpm', ['install', '--frozen-lockfile'], root + folder);
   const local = root + '.local/dynamodb'; await mkdir(local + '/data', { recursive: true });
@@ -33,7 +42,7 @@ try {
   const database = start('java', [`-Djava.library.path=${local}/DynamoDBLocal_lib`, '-jar', local + '/DynamoDBLocal.jar', '-sharedDb', '-dbPath', local + '/data', '-port', '8126']);
   let ready = false;
   for (let i = 0; i < 50; i++) { try { await fetch(env.DYNAMODB_ENDPOINT); ready = true; break; } catch { await new Promise(resolve => setTimeout(resolve, 200)); } }
-  if (!ready) throw new Error('DynamoDB Local did not start');
+  if (!ready || database.exitCode !== null) throw new Error('DynamoDB Local did not start. Check the database output above.');
   await run(process.execPath, ['--import', 'tsx', 'scripts/create-tables.ts'], root + 'backend', env);
   await run(process.execPath, ['--import', 'tsx', 'scripts/seed-local.ts'], root + 'backend', env);
   await run('pnpm', ['build'], root + 'web', env); await run(process.execPath, ['scripts/sync-web.mjs']);
