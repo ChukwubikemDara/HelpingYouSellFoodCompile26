@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { Ionicons } from '@expo/vector-icons'
+import type { ComponentProps, ReactNode } from 'react'
 import {
   ActivityIndicator,
   Pressable,
@@ -8,68 +9,93 @@ import {
   View,
   type StyleProp,
   type TextInputProps,
+  type TextProps,
+  type TextStyle,
   type ViewStyle,
 } from 'react-native'
+import { colors, fonts, radius } from '../theme'
 
-export const colors = {
-  bg: '#fafaf9',
-  card: '#ffffff',
-  border: '#e7e5e4',
-  text: '#1c1917',
-  muted: '#78716c',
-  primary: '#059669',
-  primaryDark: '#047857',
-  danger: '#b91c1c',
-  dangerBg: '#fef2f2',
+export type IoniconName = ComponentProps<typeof Ionicons>['name']
+
+const TEXT_VARIANTS = {
+  display: { fontFamily: fonts.display, fontSize: 32, lineHeight: 36, color: colors.ink },
+  title: { fontFamily: fonts.display, fontSize: 22, lineHeight: 27, color: colors.ink },
+  heading: { fontFamily: fonts.bold, fontSize: 16, lineHeight: 21, color: colors.ink },
+  body: { fontFamily: fonts.body, fontSize: 15, lineHeight: 21, color: colors.inkSoft },
+  small: { fontFamily: fonts.body, fontSize: 13, lineHeight: 18, color: colors.muted },
+  // tiny tracked caps: merchant names, section labels
+  eyebrow: { fontFamily: fonts.bold, fontSize: 11, lineHeight: 14, letterSpacing: 1.1, color: colors.muted },
+} satisfies Record<string, TextStyle>
+
+// Every piece of text goes through this so the fonts stay consistent.
+export function T({ variant = 'body', style, ...props }: TextProps & { variant?: keyof typeof TEXT_VARIANTS }) {
+  return <Text {...props} style={[TEXT_VARIANTS[variant], style]} />
 }
 
 interface ButtonProps {
   title: string
   onPress: () => void
   disabled?: boolean
-  variant?: 'primary' | 'secondary' | 'danger'
+  busy?: boolean
+  variant?: 'primary' | 'dark' | 'outline' | 'ghostDanger'
+  icon?: IoniconName
   style?: StyleProp<ViewStyle>
 }
 
-export function Button({ title, onPress, disabled, variant = 'primary', style }: ButtonProps) {
+export function Button({ title, onPress, disabled, busy, variant = 'primary', icon, style }: ButtonProps) {
+  const fg = variant === 'outline' ? colors.ink : variant === 'ghostDanger' ? colors.ember : '#fff'
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled}
+      disabled={disabled || busy}
       accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || busy, busy }}
       style={({ pressed }) => [
         styles.button,
-        variant === 'primary' && styles.buttonPrimary,
-        variant === 'secondary' && styles.buttonSecondary,
-        variant === 'danger' && styles.buttonDanger,
-        pressed && { opacity: 0.8 },
-        disabled && { opacity: 0.5 },
+        variant === 'primary' && { backgroundColor: colors.ember },
+        variant === 'dark' && { backgroundColor: colors.ink },
+        variant === 'outline' && { backgroundColor: colors.card, borderWidth: 1.5, borderColor: colors.line },
+        pressed && { transform: [{ scale: 0.98 }], opacity: 0.9 },
+        disabled && { opacity: 0.45 },
         style,
       ]}
     >
-      <Text
-        style={[
-          styles.buttonText,
-          variant === 'secondary' && { color: colors.text },
-          variant === 'danger' && { color: colors.danger },
-        ]}
-      >
-        {title}
-      </Text>
+      {busy ? <ActivityIndicator color={fg} /> : icon ? <Ionicons name={icon} size={18} color={fg} /> : null}
+      <Text style={[styles.buttonText, { color: fg }]}>{title}</Text>
     </Pressable>
   )
 }
 
-export function Card({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
-  return <View style={[styles.card, style]}>{children}</View>
-}
-
 export function Field({ label, hint, ...input }: TextInputProps & { label: string; hint?: string }) {
   return (
-    <View style={{ gap: 4 }}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput {...input} accessibilityLabel={label} placeholderTextColor="#a8a29e" style={styles.input} />
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+    <View style={{ gap: 6 }}>
+      <T variant="eyebrow">{label.toUpperCase()}</T>
+      <TextInput {...input} accessibilityLabel={label} placeholderTextColor="#B5A999" style={styles.input} />
+      {hint ? <T variant="small">{hint}</T> : null}
+    </View>
+  )
+}
+
+export function Pill({
+  label,
+  icon,
+  tone = 'neutral',
+}: {
+  label: string
+  icon?: IoniconName
+  tone?: 'neutral' | 'ember' | 'marigold' | 'forest' | 'ink'
+}) {
+  const tones = {
+    neutral: { bg: '#F1E9DC', fg: colors.inkSoft },
+    ember: { bg: colors.emberSoft, fg: colors.ember },
+    marigold: { bg: colors.marigold, fg: colors.ink },
+    forest: { bg: colors.forestSoft, fg: colors.forest },
+    ink: { bg: colors.ink, fg: colors.paper },
+  }[tone]
+  return (
+    <View style={[styles.pill, { backgroundColor: tones.bg }]}>
+      {icon && <Ionicons name={icon} size={12} color={tones.fg} />}
+      <Text style={[styles.pillText, { color: tones.fg }]}>{label}</Text>
     </View>
   )
 }
@@ -78,63 +104,94 @@ export function ErrorNote({ message }: { message?: string }) {
   if (!message) return null
   return (
     <View style={styles.error} accessibilityRole="alert">
-      <Text style={{ color: colors.danger }}>{message}</Text>
+      <Ionicons name="alert-circle" size={18} color={colors.ember} />
+      <T style={{ color: colors.ember, flex: 1 }}>{message}</T>
     </View>
   )
 }
 
 export function Loading() {
-  return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
-}
-
-const BADGES: Record<string, { bg: string; fg: string }> = {
-  reserved: { bg: '#d1fae5', fg: '#065f46' },
-  picked_up: { bg: '#e0f2fe', fg: '#075985' },
-  cancelled: { bg: '#fee2e2', fg: '#991b1b' },
-  no_show: { bg: '#fee2e2', fg: '#991b1b' },
-  sold_out: { bg: '#e7e5e4', fg: '#44403c' },
-}
-
-export function StatusBadge({ status }: { status: string }) {
-  const c = BADGES[status] ?? { bg: '#e7e5e4', fg: '#44403c' }
   return (
-    <View style={[styles.badge, { backgroundColor: c.bg }]}>
-      <Text style={{ color: c.fg, fontSize: 12, fontWeight: '600' }}>{status.replace('_', ' ')}</Text>
+    <View style={styles.center}>
+      <ActivityIndicator color={colors.ember} />
+    </View>
+  )
+}
+
+export function EmptyState({
+  icon,
+  title,
+  body,
+  children,
+}: {
+  icon: IoniconName
+  title: string
+  body: string
+  children?: ReactNode
+}) {
+  return (
+    <View style={styles.empty}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name={icon} size={30} color={colors.ember} />
+      </View>
+      <T variant="title" style={{ textAlign: 'center' }}>
+        {title}
+      </T>
+      <T style={{ textAlign: 'center' }}>{body}</T>
+      {children}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  button: { borderRadius: 10, paddingVertical: 13, paddingHorizontal: 16, alignItems: 'center' },
-  buttonPrimary: { backgroundColor: colors.primary },
-  buttonSecondary: { backgroundColor: colors.card, borderWidth: 1, borderColor: '#d6d3d1' },
-  buttonDanger: { backgroundColor: colors.card, borderWidth: 1, borderColor: '#fca5a5' },
-  buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
-  card: {
-    backgroundColor: colors.card,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: 16,
+  button: {
+    minHeight: 54,
+    borderRadius: radius.md,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
   },
-  label: { fontSize: 14, fontWeight: '500', color: '#44403c' },
-  hint: { fontSize: 12, color: colors.muted },
+  buttonText: { fontFamily: fonts.bold, fontSize: 16 },
   input: {
     backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: '#d6d3d1',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 11,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    borderRadius: radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontFamily: fonts.medium,
     fontSize: 16,
-    color: colors.text,
+    color: colors.ink,
   },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  pillText: { fontFamily: fonts.bold, fontSize: 12 },
   error: {
-    backgroundColor: colors.dangerBg,
-    borderWidth: 1,
-    borderColor: '#fecaca',
-    borderRadius: 10,
-    padding: 10,
+    flexDirection: 'row',
+    gap: 8,
+    alignItems: 'center',
+    backgroundColor: colors.emberSoft,
+    borderRadius: radius.md,
+    padding: 12,
   },
-  badge: { borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.paper, minHeight: 160 },
+  empty: { alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingTop: 56 },
+  emptyIcon: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    backgroundColor: colors.emberSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
 })
